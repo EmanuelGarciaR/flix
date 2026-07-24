@@ -14,22 +14,22 @@ export function Header({ className }: { className?: string }) {
   const headerRef = useRef<HTMLElement>(null)
 
   useGSAP(() => {
-    const showAnim = gsap.from(headerRef.current, { 
+    const hideAnim = gsap.to(headerRef.current, { 
       yPercent: -100,
       paused: true,
       duration: 0.3,
-      ease: "power1.inOut"
-    }).progress(1)
+      ease: "power2.inOut"
+    })
     
     ScrollTrigger.create({
       start: "top top",
       end: "max",
       onUpdate: (self) => {
         // Only hide after scrolling down a bit (e.g. past 50px)
-        if (self.progress > 0 && self.scrollY > 50) {
-          self.direction === 1 ? showAnim.reverse() : showAnim.play()
+        if (self.scroll() > 50) {
+          self.direction === 1 ? hideAnim.play() : hideAnim.reverse()
         } else {
-          showAnim.play()
+          hideAnim.reverse()
         }
       }
     })
