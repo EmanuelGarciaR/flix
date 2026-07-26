@@ -34,14 +34,14 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Route protection
   const { pathname } = request.nextUrl
-  const isAuthRoute = pathname === '/login' || pathname === '/register' || pathname === '/forgot-password' || pathname === '/reset-password'
-  
-  const isProtectedRoute = pathname === '/home' || 
-    pathname === '/browse' || 
-    pathname.startsWith('/movie/') || 
-    pathname.startsWith('/watch/') || 
+
+  // Unauthenticated users cannot access main app routes
+  const isProtectedRoute =
+    pathname === '/home' ||
+    pathname === '/browse' ||
+    pathname.startsWith('/movie/') ||
+    pathname.startsWith('/watch/') ||
     pathname === '/profile'
 
   if (!user && isProtectedRoute) {
@@ -49,6 +49,15 @@ export async function updateSession(request: NextRequest) {
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
+
+  // Auth routes: redirect logged-in users to /home
+  // Exception: /reset-password must always be accessible — the recovery token
+  // arrives in the URL hash which the server never sees, so middleware can't
+  // tell whether the user is there legitimately.
+  const isAuthRoute =
+    pathname === '/login' ||
+    pathname === '/register' ||
+    pathname === '/forgot-password'
 
   if (user && isAuthRoute) {
     const url = request.nextUrl.clone()

@@ -51,9 +51,11 @@ export default function RegisterPage() {
     })
 
     if (authError) {
-      // Map Supabase technical errors to readable messages
-      if (authError.message.toLowerCase().includes('already registered')) {
+      const msg = authError.message.toLowerCase()
+      if (msg.includes('already registered')) {
         setError("This email is already registered. Try signing in instead.")
+      } else if (msg.includes('rate limit') || msg.includes('email rate')) {
+        setError("Too many sign-up attempts. Please wait a few minutes and try again.")
       } else {
         setError(authError.message)
       }
