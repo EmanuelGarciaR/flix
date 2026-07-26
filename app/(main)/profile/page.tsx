@@ -1,7 +1,29 @@
+import { redirect } from "next/navigation"
 import { User, Settings, CreditCard, LogOut, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/Button"
+import { getUser, getProfile } from "@/lib/auth"
+import { createClient } from "@/lib/supabase/server"
 
-export default function ProfilePage() {
+async function signOut() {
+  "use server"
+  const supabase = await createClient()
+  await supabase.auth.signOut()
+  redirect("/login")
+}
+
+export default async function ProfilePage() {
+  const user = await getUser()
+  if (!user) {
+    redirect("/login")
+  }
+
+  const profile = await getProfile(user.id)
+  
+  // Default values if profile hasn't been created yet
+  const displayName = profile?.display_name || user.email?.split('@')[0] || "User"
+  const plan = profile?.plan || "free"
+  const region = profile?.region || "Unknown"
+
   return (
     <div className="flex flex-col px-4 py-6 md:px-12 md:py-10 mx-auto max-w-4xl w-full">
       <h1 className="text-display-lg-mobile md:text-display-lg mb-8 text-on-background">Profile</h1>
@@ -12,10 +34,10 @@ export default function ProfilePage() {
           <User size={40} className="text-on-surface" />
         </div>
         <div className="flex flex-col gap-1">
-          <h2 className="text-headline-sm font-semibold text-on-background">Cinephile User</h2>
-          <p className="text-body-sm text-muted">user@example.com</p>
-          <div className="mt-2 inline-flex items-center rounded bg-primary/20 px-2 py-1 text-label-caps text-primary">
-            Premium Plan
+          <h2 className="text-headline-sm font-semibold text-on-background">{displayName}</h2>
+          <p className="text-body-sm text-muted">{user.email}</p>
+          <div className="mt-2 inline-flex items-center rounded bg-primary/20 px-2 py-1 text-label-caps text-primary uppercase">
+            {plan} Plan
           </div>
         </div>
       </div>
@@ -43,14 +65,17 @@ export default function ProfilePage() {
         <h3 className="text-label-caps mb-2 mt-6 text-muted">Region</h3>
         <div className="flex w-full items-center justify-between rounded-lg bg-surface-container p-4">
           <span className="text-body-lg text-on-background">Current Region</span>
-          <span className="text-body-sm text-muted">United States</span>
+          <span className="text-body-sm text-muted">{region}</span>
         </div>
 
-        <Button variant="secondary" className="mt-8 w-full gap-2 text-error hover:bg-error/10 hover:text-error border-error/20 md:w-auto md:self-start">
-          <LogOut size={18} />
-          Sign Out
-        </Button>
+        <form action={signOut} className="mt-8">
+          <Button type="submit" variant="secondary" className="w-full gap-2 text-error hover:bg-error/10 hover:text-error border-error/20 md:w-auto md:self-start">
+            <LogOut size={18} />
+            Sign Out
+          </Button>
+        </form>
       </div>
     </div>
   )
 }
+
