@@ -1,68 +1,67 @@
-import { MovieCard } from "@/components/ui/MovieCard"
-import { Button } from "@/components/ui/Button"
-import { Play, Plus } from "lucide-react"
+import { tmdb } from '@/lib/tmdb';
+import { getActiveProfile } from '@/lib/auth';
+import { ContentRow } from '@/components/home/ContentRow';
+import { HeroSection } from '@/components/home/HeroSection';
+import { ContinueWatchingRow } from '@/components/home/ContinueWatchingRow';
+import { getContinueWatching } from '@/app/actions/watch-history';
 
-export default function HomePage() {
+export default async function HomePage() {
+  const profile = await getActiveProfile();
+  const region = profile?.region || 'US';
+
+  // Parallel fetches
+  const [trending, popularMovies, popularTV, topRated, continueWatching] = await Promise.all([
+    tmdb.trending('all', 'week'),
+    tmdb.popular('movie', 1, region),
+    tmdb.popular('tv', 1, region),
+    tmdb.topRated('movie', 1, region),
+    profile ? getContinueWatching(profile.id) : Promise.resolve([]),
+  ]);
+
+  // Get hero from trending first movie
+  const hero = trending.results?.find((r: any) => r.media_type === 'movie' && r.backdrop_path) || 
+               trending.results?.[0];
+
   return (
     <div className="flex flex-col gap-12 pb-12">
-      {/* Hero Section */}
-      <section className="relative flex min-h-[60vh] w-full flex-col items-center justify-center md:min-h-[80vh]">
-        <div className="absolute inset-0 -z-10 bg-surface-container-high" /> {/* Placeholder image background */}
-        <div className="absolute inset-0 -z-10 bg-gradient-to-t from-background via-background/40 to-transparent" />
-        <div className="z-10 flex flex-col items-center justify-center p-4 text-center md:p-12">
-          <div className="mb-2 text-label-caps text-primary">New Release</div>
-          <h1 className="text-display-lg-mobile md:text-display-lg mb-4 max-w-lg text-balance text-on-background">
-            The Darkest Hour
-          </h1>
-          <p className="text-body-sm md:text-body-lg mb-8 max-w-xs text-balance text-on-background/80 sm:max-w-sm md:max-w-md">
-            In the shadows of a fallen city, a lone detective must unravel a mystery that connects the highest echelons of power to the deepest underworld.
-          </p>
-          <div className="flex items-center justify-center gap-4">
-            <Button size="lg" className="gap-2">
-              <Play fill="currentColor" size={20} />
-              Play Now
-            </Button>
-            <Button variant="secondary" size="lg" className="gap-2">
-              <Plus size={20} />
-              My List
-            </Button>
-          </div>
-        </div>
-      </section>
+      {hero && (
+        <HeroSection
+          title={hero.title || hero.name}
+          overview={hero.overview}
+          backdropUrl={tmdb.backdrop(hero.backdrop_path, 'w1280')}
+          tmdbId={hero.id}
+          mediaType={hero.media_type || 'movie'}
+          profileId={profile?.id}
+        />
+      )}
 
-      {/* Continue Watching */}
-      <section className="px-4 md:px-12">
-        <h2 className="text-headline-sm mb-4">Continue Watching</h2>
-        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-          <MovieCard
-            title="Neon Shadows"
-            metadata="S1:E4 | 45m left"
-            className="w-[140px] shrink-0 md:w-[200px]"
-            progress={65}
-          />
-          <MovieCard
-            title="The Silent Echo"
-            metadata="1h 20m left"
-            className="w-[140px] shrink-0 md:w-[200px]"
-            progress={30}
-          />
-        </div>
-      </section>
+      {continueWatching && continueWatching.length > 0 && (
+        <ContinueWatchingRow items={continueWatching} />
+      )}
 
-      {/* Trending Now */}
-      <section className="px-4 md:px-12">
-        <h2 className="text-headline-sm mb-4">Trending Now</h2>
-        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <MovieCard
-              key={i}
-              title={`Trending Movie ${i}`}
-              metadata="2024 | R | Action"
-              className="w-[140px] shrink-0 md:w-[200px]"
-            />
-          ))}
-        </div>
-      </section>
+      <ContentRow
+        title="Trending This Week"
+        items={trending.results?.slice(0, 15) || []}
+        getImage={(item) => tmdb.image(item.poster_path, 'w342')}
+      />
+
+      <ContentRow
+        title="Popular Movies"
+        items={popularMovies.results?.slice(0, 15) || []}
+        getImage={(item) => tmdb.image(item.poster_path, 'w342')}
+      />
+
+      <ContentRow
+        title="Popular TV Shows"
+        items={popularTV.results?.slice(0, 15) || []}
+        getImage={(item) => tmdb.image(item.poster_path, 'w342')}
+      />
+
+      <ContentRow
+        title="Top Rated Movies"
+        items={topRated.results?.slice(0, 15) || []}
+        getImage={(item) => tmdb.image(item.poster_path, 'w342')}
+      />
     </div>
-  )
+  );
 }

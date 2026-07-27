@@ -37,3 +37,23 @@ export async function getProfile(userId: string) {
     return null
   }
 }
+
+export async function getActiveProfile() {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return null
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single()
+
+    if (error || !data) return null
+    return data
+  } catch (error) {
+    console.error('Error fetching active profile:', error)
+    return null
+  }
+}

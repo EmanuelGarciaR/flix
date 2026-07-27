@@ -1,6 +1,6 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
-import Image from "next/image"
+import { ImageWithFallback } from "@/components/ui/ImageWithFallback"
 
 export interface MovieCardProps extends React.HTMLAttributes<HTMLDivElement> {
   title: string
@@ -26,19 +26,13 @@ export function MovieCard({
       {...props}
     >
       <div className="relative aspect-[2/3] w-full overflow-hidden rounded bg-surface-container hover:shadow-[0_0_15px_rgba(229,9,20,0.2)]">
-        {imageUrl ? (
-          <Image
-            src={imageUrl}
-            alt={title}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 50vw, 33vw"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center bg-surface-variant text-muted">
-            No Image
-          </div>
-        )}
+        <ImageWithFallback
+          src={imageUrl || ""}
+          alt={title}
+          fill
+          className="object-cover"
+          sizes="(max-width: 768px) 50vw, 33vw"
+        />
         
         {/* Progress Bar for Continue Watching */}
         {progress !== undefined && (

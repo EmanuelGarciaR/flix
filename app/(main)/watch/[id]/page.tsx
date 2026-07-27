@@ -1,62 +1,109 @@
-import Link from "next/link"
-import { ArrowLeft, Play, Pause, SkipBack, SkipForward, Volume2, Maximize } from "lucide-react"
+import { getActiveProfile } from '@/lib/auth';
+import { MuxPlayerComponent } from '@/components/player/MuxPlayer';
+import { createClient } from '@/lib/supabase/server';
+import { tmdb } from '@/lib/tmdb';
+import { redirect } from 'next/navigation';
+import Link from 'next/link';
 
-export default async function WatchPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
+interface Props {
+  params: Promise<{ id: string }>; // id corresponds to Mux playbackId
+  searchParams: Promise<{ tmdbId: string; type: string; season?: string; episode?: string }>;
+}
+
+export default async function WatchPage({ params, searchParams }: Props) {
+  const { id: playbackId } = await params;
+  const { tmdbId, type, season, episode } = await searchParams;
+  
+  const profile = await getActiveProfile();
+  if (!profile) {
+    redirect('/login');
+  }
+
+  if (!tmdbId || !type) {
+    redirect('/home');
+  }
+
+  // Fetch initial resume progress from watch_history
+  const supabase = await createClient();
+  const isTv = type === 'tv';
+  const seasonNum = season ? Number(season) : null;
+  const epNum = episode ? Number(episode) : null;
+
+  let query = supabase
+    .from('watch_history')
+    .select('progress_seconds')
+    .eq('profile_id', profile.id)
+    .eq('tmdb_id', Number(tmdbId))
+    .eq('media_type', type);
+
+  if (isTv) {
+    query = query.eq('season_number', seasonNum).eq('episode_number', epNum);
+  } else {
+    // For movies, season and episode are null in unique index
+    query = query.is('season_number', null).is('episode_number', null);
+  }
+
+  const { data: watchHistory } = await query.maybeSingle();
+  const initialTime = watchHistory?.progress_seconds || 0;
+
+  // Fetch title and poster path for metadata
+  let title = "Video";
+  let posterPath = "";
+
+  try {
+    if (isTv) {
+      const show = await tmdb.tvDetails(Number(tmdbId));
+      title = show.name || "TV Show";
+      posterPath = show.poster_path || "";
+      if (seasonNum !== null && epNum !== null) {
+        title = `${title} (S${seasonNum}:E${epNum})`;
+      }
+    } else {
+      const movie = await tmdb.movieDetails(Number(tmdbId));
+      title = movie.title || "Movie";
+      posterPath = movie.poster_path || "";
+    }
+  } catch (err) {
+    console.error("Error fetching watch details:", err);
+  }
+
+  // Back button url
+  const backUrl = isTv
+    ? `/tv/${tmdbId}${season ? `?season=${season}` : ""}`
+    : `/movie/${tmdbId}`;
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black">
-      {/* Video Placeholder */}
-      <div className="absolute inset-0 flex items-center justify-center bg-black">
-        <span className="text-muted text-body-lg">Video Player Placeholder (ID: {id})</span>
-      </div>
-
-      {/* Overlay Controls */}
-      <div className="absolute inset-0 flex flex-col justify-between bg-black/40 opacity-0 transition-opacity hover:opacity-100 p-6 md:p-8">
-        
-        {/* Top Bar */}
-        <div className="flex items-center gap-4">
-          <Link href={`/movie/${id}`} className="text-on-background hover:text-primary transition-colors">
-            <ArrowLeft size={32} />
+    <div className="fixed inset-0 bg-black z-[100] flex items-center justify-center">
+      {playbackId.startsWith('youtube:') ? (
+        <div className="relative w-full h-full">
+          <iframe
+            src={`https://www.youtube.com/embed/${playbackId.replace('youtube:', '')}?autoplay=1&fs=1&controls=1`}
+            allow="autoplay; fullscreen; encrypted-media"
+            className="w-full h-full"
+            style={{ border: 0 }}
+          />
+          <Link
+            href={backUrl}
+            className="absolute top-6 left-6 z-50 p-3 bg-black/50 hover:bg-black/80 backdrop-blur-md rounded-full text-white transition-colors"
+            title="Go back"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
           </Link>
-          <h2 className="text-headline-sm font-semibold text-on-background">Movie Title</h2>
         </div>
-
-        {/* Center Play/Pause (Optional) */}
-        <div className="flex items-center justify-center">
-          {/* <button className="rounded-full bg-primary/20 p-6 text-primary backdrop-blur-md transition-transform hover:scale-110">
-            <Play fill="currentColor" size={48} />
-          </button> */}
-        </div>
-
-        {/* Bottom Controls */}
-        <div className="flex flex-col gap-4">
-          {/* Scrubber */}
-          <div className="flex items-center gap-4">
-            <span className="text-label-caps text-on-background">00:00:00</span>
-            <div className="relative h-1 flex-1 cursor-pointer rounded-full bg-surface-container">
-              <div className="absolute left-0 h-full w-1/3 rounded-full bg-primary"></div>
-              {/* Thumb */}
-              <div className="absolute left-1/3 top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary shadow"></div>
-            </div>
-            <span className="text-label-caps text-on-background">02:15:00</span>
-          </div>
-          
-          {/* Action Buttons */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6 text-on-background">
-              <button className="hover:text-primary transition-colors"><SkipBack size={24} fill="currentColor" /></button>
-              <button className="hover:text-primary transition-colors"><Pause size={32} fill="currentColor" /></button>
-              <button className="hover:text-primary transition-colors"><SkipForward size={24} fill="currentColor" /></button>
-              <button className="hover:text-primary transition-colors ml-4"><Volume2 size={24} /></button>
-            </div>
-            
-            <div className="flex items-center gap-6 text-on-background">
-              <button className="hover:text-primary transition-colors"><Maximize size={24} /></button>
-            </div>
-          </div>
-        </div>
-      </div>
+      ) : (
+        <MuxPlayerComponent
+          playbackId={playbackId}
+          profileId={profile.id}
+          tmdbId={Number(tmdbId)}
+          mediaType={type as 'movie' | 'tv'}
+          title={title}
+          posterPath={posterPath}
+          seasonNumber={seasonNum !== null ? seasonNum : undefined}
+          episodeNumber={epNum !== null ? epNum : undefined}
+          initialTime={initialTime}
+          backUrl={backUrl}
+        />
+      )}
     </div>
-  )
+  );
 }

@@ -51,10 +51,10 @@ export function Header({ className }: { className?: string }) {
       </div>
       
       <div className="flex items-center gap-4">
-        <button className="text-on-background transition-colors hover:text-primary">
+        <Link href="/search" className="text-on-background transition-colors hover:text-primary">
           <Search size={20} />
           <span className="sr-only">Search</span>
-        </button>
+        </Link>
         <Link href="/profile" className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-container transition-colors hover:bg-surface-bright">
           <User size={16} className="text-on-surface" />
           <span className="sr-only">Profile</span>
