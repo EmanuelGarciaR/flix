@@ -12,9 +12,9 @@ export default async function HomePage() {
   // Parallel fetches
   const [trending, popularMovies, popularTV, topRated, continueWatching] = await Promise.all([
     tmdb.trending('all', 'week'),
-    tmdb.popular('movie', 1),
-    tmdb.popular('tv', 1),
-    tmdb.topRated('movie', 1),
+    tmdb.popular('movie', 1, region),
+    tmdb.popular('tv', 1, region),
+    tmdb.topRated('movie', 1, region),
     profile ? getContinueWatching(profile.id) : Promise.resolve([]),
   ]);
 

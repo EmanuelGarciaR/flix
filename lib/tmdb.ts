@@ -18,12 +18,12 @@ export const tmdb = {
     fetchTMDB(`/trending/${mediaType}/${timeWindow}`, { language: 'en-US' }),
 
   // Popular
-  popular: (mediaType: 'movie' | 'tv', page = 1) =>
-    fetchTMDB(`/${mediaType}/popular`, { language: 'en-US', page: page.toString() }),
+  popular: (mediaType: 'movie' | 'tv', page = 1, region = 'US') =>
+    fetchTMDB(`/${mediaType}/popular`, { language: 'en-US', page: page.toString(), region }),
 
   // Top Rated
-  topRated: (mediaType: 'movie' | 'tv', page = 1) =>
-    fetchTMDB(`/${mediaType}/top_rated`, { language: 'en-US', page: page.toString() }),
+  topRated: (mediaType: 'movie' | 'tv', page = 1, region = 'US') =>
+    fetchTMDB(`/${mediaType}/top_rated`, { language: 'en-US', page: page.toString(), region }),
 
   // Discover with filters
   discover: (params: Record<string, string>) =>

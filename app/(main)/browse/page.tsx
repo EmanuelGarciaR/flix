@@ -1,4 +1,5 @@
 import { tmdb } from "@/lib/tmdb";
+import { getActiveProfile } from "@/lib/auth";
 import { MovieCard } from "@/components/ui/MovieCard";
 import { Button } from "@/components/ui/Button";
 import Link from "next/link";
@@ -20,14 +21,16 @@ const genres = [
 
 export default async function BrowsePage({ searchParams }: Props) {
   const { genre = 'all' } = await searchParams;
+  const profile = await getActiveProfile();
+  const region = profile?.region || 'US';
 
   let results = [];
   try {
     if (genre === 'all') {
-      const data = await tmdb.popular('movie', 1);
+      const data = await tmdb.popular('movie', 1, region);
       results = data.results || [];
     } else {
-      const data = await tmdb.discover({ with_genres: genre });
+      const data = await tmdb.discover({ with_genres: genre, region, watch_region: region });
       results = data.results || [];
     }
   } catch (err) {
