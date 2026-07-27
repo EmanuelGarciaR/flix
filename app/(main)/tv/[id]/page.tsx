@@ -3,7 +3,6 @@ import { getActiveProfile } from '@/lib/auth';
 import { ContentDetail } from '@/components/movie/ContentDetail';
 import { SeasonSelector } from '@/components/movie/SeasonSelector';
 import { EpisodeList } from '@/components/movie/EpisodeList';
-import { WatchProviders } from '@/components/movie/WatchProviders';
 import { CastCrew } from '@/components/movie/CastCrew';
 import { ContentRow } from '@/components/home/ContentRow';
 import { notFound } from 'next/navigation';
@@ -74,7 +73,6 @@ export default async function TVDetailPage({ params, searchParams }: Props) {
       )}
 
       <CastCrew cast={tv.credits?.cast || []} tmdb={tmdb} />
-      <WatchProviders providers={providersByRegion} />
       
       {tv.recommendations?.results && tv.recommendations.results.length > 0 && (
         <ContentRow

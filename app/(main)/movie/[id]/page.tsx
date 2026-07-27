@@ -1,7 +1,6 @@
 import { tmdb } from '@/lib/tmdb';
 import { getActiveProfile } from '@/lib/auth';
 import { ContentDetail } from '@/components/movie/ContentDetail';
-import { WatchProviders } from '@/components/movie/WatchProviders';
 import { CastCrew } from '@/components/movie/CastCrew';
 import { ContentRow } from '@/components/home/ContentRow';
 import { notFound } from 'next/navigation';
@@ -41,7 +40,6 @@ export default async function MovieDetailPage({ params }: Props) {
         profileId={profile?.id}
       />
       <CastCrew cast={movie.credits?.cast || []} tmdb={tmdb} />
-      <WatchProviders providers={providersByRegion} />
       {movie.recommendations?.results && movie.recommendations.results.length > 0 && (
         <ContentRow
           title="Similar Titles"
