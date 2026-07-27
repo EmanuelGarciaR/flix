@@ -38,8 +38,12 @@ export function ContentDetail({
   const rating = item.vote_average ? item.vote_average.toFixed(1) : null;
   const genres = item.genres || [];
 
+  const trailer = item.videos?.results?.find((v: any) => v.type === "Trailer" && v.site === "YouTube") || 
+                  item.videos?.results?.find((v: any) => v.site === "YouTube");
+
   // Play URL
-  const playUrl = buildWatchUrl(null, {
+  const playbackId = trailer ? `youtube:${trailer.key}` : null;
+  const playUrl = buildWatchUrl(playbackId, {
     tmdbId: item.id,
     type: mediaType,
     season: mediaType === "tv" ? 1 : undefined,
@@ -53,16 +57,23 @@ export function ContentDetail({
 
   return (
     <div className="flex flex-col gap-8">
-      {/* Hero Poster / Backdrop */}
-      <section className="relative h-[45vh] w-full md:h-[65vh] overflow-hidden">
-        {backdropUrl ? (
+      {/* Hero Poster / Backdrop / Video */}
+      <section className="relative h-[45vh] w-full md:h-[65vh] overflow-hidden bg-surface-container-high">
+        {trailer ? (
+          <div className="absolute inset-0 w-full h-full pointer-events-none">
+            <iframe
+              src={`https://www.youtube.com/embed/${trailer.key}?autoplay=1&mute=1&controls=0&showinfo=0&rel=0&loop=1&playlist=${trailer.key}&modestbranding=1`}
+              allow="autoplay; encrypted-media"
+              className="w-full h-full object-cover scale-[1.35] opacity-80"
+              style={{ border: 0 }}
+            />
+          </div>
+        ) : backdropUrl ? (
           <div
             className="absolute inset-0 bg-cover bg-center bg-no-repeat"
             style={{ backgroundImage: `url(${backdropUrl})` }}
           />
-        ) : (
-          <div className="absolute inset-0 bg-surface-container-high" />
-        )}
+        ) : null}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-transparent to-transparent" />
       </section>

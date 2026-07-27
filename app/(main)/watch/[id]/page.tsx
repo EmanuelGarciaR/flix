@@ -3,6 +3,7 @@ import { MuxPlayerComponent } from '@/components/player/MuxPlayer';
 import { createClient } from '@/lib/supabase/server';
 import { tmdb } from '@/lib/tmdb';
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 
 interface Props {
   params: Promise<{ id: string }>; // id corresponds to Mux playbackId
@@ -73,18 +74,36 @@ export default async function WatchPage({ params, searchParams }: Props) {
 
   return (
     <div className="fixed inset-0 bg-black z-[100] flex items-center justify-center">
-      <MuxPlayerComponent
-        playbackId={playbackId}
-        profileId={profile.id}
-        tmdbId={Number(tmdbId)}
-        mediaType={type as 'movie' | 'tv'}
-        title={title}
-        posterPath={posterPath}
-        seasonNumber={seasonNum !== null ? seasonNum : undefined}
-        episodeNumber={epNum !== null ? epNum : undefined}
-        initialTime={initialTime}
-        backUrl={backUrl}
-      />
+      {playbackId.startsWith('youtube:') ? (
+        <div className="relative w-full h-full">
+          <iframe
+            src={`https://www.youtube.com/embed/${playbackId.replace('youtube:', '')}?autoplay=1&fs=1&controls=1`}
+            allow="autoplay; fullscreen; encrypted-media"
+            className="w-full h-full"
+            style={{ border: 0 }}
+          />
+          <Link
+            href={backUrl}
+            className="absolute top-6 left-6 z-50 p-3 bg-black/50 hover:bg-black/80 backdrop-blur-md rounded-full text-white transition-colors"
+            title="Go back"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </Link>
+        </div>
+      ) : (
+        <MuxPlayerComponent
+          playbackId={playbackId}
+          profileId={profile.id}
+          tmdbId={Number(tmdbId)}
+          mediaType={type as 'movie' | 'tv'}
+          title={title}
+          posterPath={posterPath}
+          seasonNumber={seasonNum !== null ? seasonNum : undefined}
+          episodeNumber={epNum !== null ? epNum : undefined}
+          initialTime={initialTime}
+          backUrl={backUrl}
+        />
+      )}
     </div>
   );
 }
