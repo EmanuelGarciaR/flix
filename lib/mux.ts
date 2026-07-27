@@ -15,7 +15,7 @@ export async function getSignedPlaybackUrl(playbackId: string, expiresIn = 3600)
 export async function createDirectUpload() {
   const upload = await mux.video.uploads.create({
     new_asset_settings: { playback_policy: ['public'], test: false },
-    cors_origin: process.env.NEXT_PUBLIC_APP_URL,
+    cors_origin: process.env.NEXT_PUBLIC_APP_URL || '*',
   });
   return upload;
 }
