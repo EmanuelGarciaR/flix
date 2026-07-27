@@ -34,7 +34,7 @@ export function MuxPlayerComponent({
   backUrl,
 }: Props) {
   const playerRef = useRef<any>(null);
-  const heartbeatRef = useRef<NodeJS.Timeout>();
+  const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const player = playerRef.current;
