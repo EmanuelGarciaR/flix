@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { MuxPlayer } from '@mux/playback-react';
+import MuxPlayer from '@mux/mux-player-react';
 import { updateWatchProgress } from '@/app/actions/watch-history';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
@@ -115,7 +115,7 @@ export function MuxPlayerComponent({
 
       <MuxPlayer
         ref={playerRef}
-        playback-id={playbackId}
+        playbackId={playbackId}
         metadata={{
           video_id: `tmdb_${tmdbId}`,
           video_title: title,
@@ -123,9 +123,8 @@ export function MuxPlayerComponent({
           video_series_season: seasonNumber?.toString(),
           video_series_episode: episodeNumber?.toString(),
         }}
-        stream-type="on-demand"
-        default-muted={false}
-        auto-play
+        streamType="on-demand"
+        autoPlay
         className="w-full h-full object-contain"
         style={{ width: '100%', height: '100%' }}
       />

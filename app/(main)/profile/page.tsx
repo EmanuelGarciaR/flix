@@ -5,6 +5,7 @@ import { getUser, getProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { updateProfileRegion } from "@/app/actions/profile";
 import { revalidatePath } from "next/cache";
+import Link from "next/link";
 
 async function signOut() {
   "use server";
@@ -57,13 +58,13 @@ export default async function ProfilePage() {
       <div className="flex flex-col gap-2">
         <h3 className="text-label-caps mb-2 text-muted">Account Settings</h3>
         
-        <button className="flex w-full items-center justify-between rounded-lg bg-surface-container p-4 text-left transition-colors hover:bg-surface-bright">
+        <Link href="/settings" className="flex w-full items-center justify-between rounded-lg bg-surface-container p-4 text-left transition-colors hover:bg-surface-bright">
           <div className="flex items-center gap-4">
             <Settings size={20} className="text-muted" />
             <span className="text-body-lg text-on-background">App Preferences</span>
           </div>
           <ChevronRight size={20} className="text-muted" />
-        </button>
+        </Link>
         
         <button className="flex w-full items-center justify-between rounded-lg bg-surface-container p-4 text-left transition-colors hover:bg-surface-bright">
           <div className="flex items-center gap-4">
