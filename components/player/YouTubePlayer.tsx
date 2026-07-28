@@ -17,6 +17,8 @@ type YouTubeApi = {
   Player: new (
     element: HTMLElement,
     options: {
+      width?: string | number;
+      height?: string | number;
       videoId: string;
       playerVars: Record<string, string | number>;
       events: {
@@ -149,6 +151,8 @@ export function YouTubePlayerComponent({
         }
 
         player = new YT.Player(mountPoint, {
+          width: '100%',
+          height: '100%',
           videoId,
           playerVars,
           events: {
@@ -201,8 +205,8 @@ export function YouTubePlayerComponent({
         </Link>
         <p className="text-body-sm font-medium">{title}</p>
       </div>
-      <div className="relative min-h-0 flex-1">
-        <div ref={containerRef} className="h-full w-full" />
+      <div className="relative min-h-0 flex-1 w-full h-full">
+        <div ref={containerRef} className="h-full w-full [&>iframe]:h-full [&>iframe]:w-full [&>iframe]:border-0" />
         {failed && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black p-6 text-center text-body-sm">
             <p className="text-muted max-w-md">
