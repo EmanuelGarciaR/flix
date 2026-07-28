@@ -38,8 +38,16 @@ export function ContentDetail({
   const rating = item.vote_average ? item.vote_average.toFixed(1) : null;
   const genres = item.genres || [];
 
-  const trailer = item.videos?.results?.find((v: any) => v.type === "Trailer" && v.site === "YouTube") || 
-                  item.videos?.results?.find((v: any) => v.site === "YouTube");
+  const youtubeVideos = (item.videos?.results || []).filter(
+    (v: any) => v.site?.toLowerCase() === "youtube" && v.key
+  );
+
+  const trailer =
+    youtubeVideos.find((v: any) => v.type?.toLowerCase() === "trailer" && v.official) ||
+    youtubeVideos.find((v: any) => v.type?.toLowerCase() === "trailer") ||
+    youtubeVideos.find((v: any) => v.type?.toLowerCase() === "teaser") ||
+    youtubeVideos.find((v: any) => v.type?.toLowerCase() === "clip") ||
+    youtubeVideos[0];
 
   // The background trailer and Play use separate YouTube player instances.
   const playUrl = buildWatchUrl(trailer?.key ? `youtube:${trailer.key}` : null, {

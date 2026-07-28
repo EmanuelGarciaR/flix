@@ -68,6 +68,7 @@ export default async function TVDetailPage({ params, searchParams }: Props) {
             seasonNumber={seasonNumber}
             profileId={profile?.id}
             tmdb={tmdb}
+            videos={tv.videos?.results || []}
           />
         </>
       )}

@@ -11,6 +11,7 @@ interface EpisodeListProps {
   seasonNumber: number;
   profileId?: string;
   tmdb: any;
+  videos?: any[];
 }
 
 export async function EpisodeList({
@@ -19,6 +20,7 @@ export async function EpisodeList({
   seasonNumber,
   profileId,
   tmdb,
+  videos,
 }: EpisodeListProps) {
   if (!episodes || episodes.length === 0) return null;
 
@@ -49,13 +51,19 @@ export async function EpisodeList({
     }
   }
 
+  const youtubeVideos = (videos || []).filter(
+    (v: any) => v.site?.toLowerCase() === "youtube" && v.key
+  );
+  const trailerKey = youtubeVideos.find((v: any) => v.type?.toLowerCase() === "trailer")?.key || youtubeVideos[0]?.key;
+  const playbackId = trailerKey ? `youtube:${trailerKey}` : null;
+
   return (
     <div className="px-4 md:px-12 flex flex-col gap-6">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {episodes.map((episode) => {
           const episodeProgress = watchProgressMap[episode.episode_number];
           const imgUrl = tmdb.backdrop(episode.still_path, "w780");
-          const playUrl = buildWatchUrl(null, {
+          const playUrl = buildWatchUrl(playbackId, {
             tmdbId,
             type: "tv",
             season: seasonNumber,
