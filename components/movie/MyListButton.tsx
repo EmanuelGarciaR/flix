@@ -24,7 +24,10 @@ export function MyListButton({
   const [loading, setLoading] = React.useState(true);
   const [toggling, setToggling] = React.useState(false);
 
+  const [mounted, setMounted] = React.useState(false);
+
   React.useEffect(() => {
+    setMounted(true);
     let active = true;
     async function check() {
       try {
@@ -58,9 +61,9 @@ export function MyListButton({
     }
   };
 
-  if (loading) {
+  if (!mounted || loading) {
     return (
-      <Button variant={variant} size={size} disabled className="gap-2">
+      <Button variant={variant} size={size} disabled={true} className="gap-2">
         <Loader2 size={20} className="animate-spin" />
         List
       </Button>
