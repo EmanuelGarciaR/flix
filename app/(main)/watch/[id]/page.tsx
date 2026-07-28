@@ -1,5 +1,6 @@
 import { getActiveProfile } from '@/lib/auth';
 import { MuxPlayerComponent } from '@/components/player/MuxPlayer';
+import { YouTubePlayerComponent } from '@/components/player/YouTubePlayer';
 import { createClient } from '@/lib/supabase/server';
 import { tmdb } from '@/lib/tmdb';
 import { redirect } from 'next/navigation';
@@ -23,9 +24,21 @@ export default async function WatchPage({ params, searchParams }: Props) {
     redirect('/home');
   }
 
+  const isTv = type === 'tv';
+  const backUrl = isTv
+    ? `/tv/${tmdbId}${season ? `?season=${season}` : ""}`
+    : `/movie/${tmdbId}`;
+
+  const youtubeVideoId = playbackId.startsWith('youtube:') ? playbackId.slice('youtube:'.length) : null;
+
+  if (youtubeVideoId && !/^[a-zA-Z0-9_-]{11}$/.test(youtubeVideoId)) {
+    redirect(backUrl);
+  }
+
+
+
   // Fetch initial resume progress from watch_history
   const supabase = await createClient();
-  const isTv = type === 'tv';
   const seasonNum = season ? Number(season) : null;
   const epNum = episode ? Number(episode) : null;
 
@@ -39,8 +52,7 @@ export default async function WatchPage({ params, searchParams }: Props) {
   if (isTv) {
     query = query.eq('season_number', seasonNum).eq('episode_number', epNum);
   } else {
-    // For movies, season and episode are null in unique index
-    query = query.is('season_number', null).is('episode_number', null);
+    query = query.eq('season_number', 0).eq('episode_number', 0);
   }
 
   const { data: watchHistory } = await query.maybeSingle();
@@ -67,29 +79,21 @@ export default async function WatchPage({ params, searchParams }: Props) {
     console.error("Error fetching watch details:", err);
   }
 
-  // Back button url
-  const backUrl = isTv
-    ? `/tv/${tmdbId}${season ? `?season=${season}` : ""}`
-    : `/movie/${tmdbId}`;
-
   return (
     <div className="fixed inset-0 bg-black z-[100] flex items-center justify-center">
-      {playbackId.startsWith('youtube:') ? (
-        <div className="relative w-full h-full">
-          <iframe
-            src={`https://www.youtube.com/embed/${playbackId.replace('youtube:', '')}?autoplay=1&fs=1&controls=1`}
-            allow="autoplay; fullscreen; encrypted-media"
-            className="w-full h-full"
-            style={{ border: 0 }}
-          />
-          <Link
-            href={backUrl}
-            className="absolute top-6 left-6 z-50 p-3 bg-black/50 hover:bg-black/80 backdrop-blur-md rounded-full text-white transition-colors"
-            title="Go back"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-          </Link>
-        </div>
+      {youtubeVideoId ? (
+        <YouTubePlayerComponent
+          videoId={youtubeVideoId}
+          profileId={profile.id}
+          tmdbId={Number(tmdbId)}
+          mediaType={type as 'movie' | 'tv'}
+          title={title}
+          posterPath={posterPath}
+          seasonNumber={seasonNum !== null ? seasonNum : undefined}
+          episodeNumber={epNum !== null ? epNum : undefined}
+          initialTime={initialTime}
+          backUrl={backUrl}
+        />
       ) : (
         <MuxPlayerComponent
           playbackId={playbackId}

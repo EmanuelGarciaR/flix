@@ -41,9 +41,8 @@ export function ContentDetail({
   const trailer = item.videos?.results?.find((v: any) => v.type === "Trailer" && v.site === "YouTube") || 
                   item.videos?.results?.find((v: any) => v.site === "YouTube");
 
-  // Play URL
-  const playbackId = trailer ? `youtube:${trailer.key}` : null;
-  const playUrl = buildWatchUrl(playbackId, {
+  // The background trailer and Play use separate YouTube player instances.
+  const playUrl = buildWatchUrl(trailer?.key ? `youtube:${trailer.key}` : null, {
     tmdbId: item.id,
     type: mediaType,
     season: mediaType === "tv" ? 1 : undefined,
@@ -62,8 +61,8 @@ export function ContentDetail({
         {trailer ? (
           <div className="absolute inset-0 w-full h-full pointer-events-none">
             <iframe
-              src={`https://www.youtube.com/embed/${trailer.key}?autoplay=1&mute=1&controls=0&showinfo=0&rel=0&loop=1&playlist=${trailer.key}&modestbranding=1`}
-              allow="autoplay; encrypted-media"
+              src={`https://www.youtube.com/embed/${trailer.key}?autoplay=1&mute=1&controls=0&showinfo=0&rel=0&loop=1&playlist=${trailer.key}&modestbranding=1&playsinline=1&enablejsapi=1`}
+              allow="autoplay; encrypted-media; picture-in-picture"
               className="w-full h-full object-cover scale-[1.35] opacity-80"
               style={{ border: 0 }}
             />

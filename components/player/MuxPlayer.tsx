@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import MuxPlayer from '@mux/mux-player-react';
+import type MuxPlayerElement from '@mux/mux-player';
 import { updateWatchProgress } from '@/app/actions/watch-history';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
@@ -33,16 +34,26 @@ export function MuxPlayerComponent({
   onEnded,
   backUrl,
 }: Props) {
-  const playerRef = useRef<any>(null);
+  const playerRef = useRef<MuxPlayerElement>(null);
   const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
+  const hasResumedRef = useRef(false);
 
   useEffect(() => {
     const player = playerRef.current;
     if (!player) return;
 
-    if (initialTime > 0) {
-      player.currentTime = initialTime;
-    }
+    hasResumedRef.current = false;
+    const resumePlayback = () => {
+      if (initialTime <= 0 || hasResumedRef.current) return;
+      const duration = Number(player.duration);
+      player.currentTime = Number.isFinite(duration) && duration > 0
+        ? Math.min(initialTime, Math.max(0, duration - 1))
+        : initialTime;
+      hasResumedRef.current = true;
+    };
+
+    resumePlayback();
+    player.addEventListener('loadedmetadata', resumePlayback);
 
     const sendHeartbeat = async () => {
       if (player && !player.paused && !player.ended) {
@@ -53,6 +64,7 @@ export function MuxPlayerComponent({
             mediaType,
             title,
             posterPath,
+            playbackId,
             seasonNumber,
             episodeNumber,
             progressSeconds: Math.floor(player.currentTime),
@@ -74,6 +86,7 @@ export function MuxPlayerComponent({
           mediaType,
           title,
           posterPath,
+          playbackId,
           seasonNumber,
           episodeNumber,
           progressSeconds: Math.floor(player.duration || 0),
@@ -94,9 +107,10 @@ export function MuxPlayerComponent({
       sendHeartbeat();
       if (player) {
         player.removeEventListener('ended', handleEnded);
+        player.removeEventListener('loadedmetadata', resumePlayback);
       }
     };
-  }, [profileId, tmdbId, mediaType, title, posterPath, seasonNumber, episodeNumber, initialTime, onEnded]);
+  }, [profileId, tmdbId, mediaType, title, posterPath, playbackId, seasonNumber, episodeNumber, initialTime, onEnded]);
 
   return (
     <div className="relative w-full h-full group bg-black">
@@ -115,7 +129,9 @@ export function MuxPlayerComponent({
 
       <MuxPlayer
         ref={playerRef}
-        playbackId={playbackId}
+        {...(playbackId === 'demo-stream' || playbackId?.startsWith('http')
+          ? { src: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8' }
+          : { playbackId: playbackId })}
         metadata={{
           video_id: `tmdb_${tmdbId}`,
           video_title: title,
