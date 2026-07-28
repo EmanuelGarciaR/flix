@@ -22,7 +22,7 @@ type YouTubeApi = {
       events: {
         onReady: () => void;
         onStateChange: (event: { data: number }) => void;
-        onError: () => void;
+        onError: (event: { data: number }) => void;
       };
     },
   ) => YouTubePlayerInstance;
@@ -36,28 +36,35 @@ declare global {
   }
 }
 
+let youtubeApiPromise: Promise<YouTubeApi> | null = null;
+
 function loadYouTubeApi(): Promise<YouTubeApi> {
+  if (typeof window === 'undefined') return Promise.reject(new Error('SSR'));
   if (window.YT?.Player) return Promise.resolve(window.YT);
+  if (youtubeApiPromise) return youtubeApiPromise;
 
-  return new Promise((resolve, reject) => {
-    const existingScript = document.querySelector<HTMLScriptElement>('script[data-youtube-iframe-api]');
+  youtubeApiPromise = new Promise((resolve, reject) => {
     const previousReady = window.onYouTubeIframeAPIReady;
-
     window.onYouTubeIframeAPIReady = () => {
       previousReady?.();
       if (window.YT?.Player) resolve(window.YT);
       else reject(new Error('YouTube Player API did not load'));
     };
 
+    const existingScript = document.querySelector<HTMLScriptElement>('script[src*="youtube.com/iframe_api"]');
     if (!existingScript) {
       const script = document.createElement('script');
       script.src = 'https://www.youtube.com/iframe_api';
       script.async = true;
-      script.dataset.youtubeIframeApi = 'true';
-      script.onerror = () => reject(new Error('Unable to load the YouTube Player API'));
+      script.onerror = (err) => {
+        youtubeApiPromise = null;
+        reject(err);
+      };
       document.head.appendChild(script);
     }
   });
+
+  return youtubeApiPromise;
 }
 
 interface YouTubePlayerProps {
@@ -89,67 +96,100 @@ export function YouTubePlayerComponent({
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    let player: YouTubePlayerInstance | undefined;
-    let heartbeat: ReturnType<typeof setInterval> | undefined;
-    let disposed = false;
+    let player: YouTubePlayerInstance | null = null;
+    let heartbeat: ReturnType<typeof setInterval> | null = null;
+    let isCancelled = false;
 
     const saveProgress = (completed = false) => {
       if (!player) return;
-      const durationSeconds = Math.floor(player.getDuration());
-      if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) return;
+      try {
+        const durationSeconds = Math.floor(player.getDuration?.() || 0);
+        if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) return;
 
-      void updateWatchProgress({
-        profileId,
-        tmdbId,
-        mediaType,
-        title,
-        posterPath,
-        playbackId: `youtube:${videoId}`,
-        seasonNumber,
-        episodeNumber,
-        progressSeconds: completed ? durationSeconds : Math.floor(player.getCurrentTime()),
-        durationSeconds,
-      }).catch((error: unknown) => console.error('Error saving trailer progress:', error));
+        const currentSecs = Math.floor(player.getCurrentTime?.() || 0);
+        void updateWatchProgress({
+          profileId,
+          tmdbId,
+          mediaType,
+          title,
+          posterPath,
+          playbackId: `youtube:${videoId}`,
+          seasonNumber,
+          episodeNumber,
+          progressSeconds: completed ? durationSeconds : currentSecs,
+          durationSeconds,
+        }).catch((error: unknown) => console.error('Error saving trailer progress:', error));
+      } catch (err) {
+        console.error('Error calculating YouTube progress:', err);
+      }
     };
 
-    void loadYouTubeApi()
-      .then((YT) => {
-        if (disposed) return;
-        player = new YT.Player(container, {
+    const initPlayer = async () => {
+      if (!containerRef.current) return;
+
+      try {
+        const YT = await loadYouTubeApi();
+        if (isCancelled || !containerRef.current) return;
+
+        // Reset container DOM node
+        const mountPoint = document.createElement('div');
+        containerRef.current.innerHTML = '';
+        containerRef.current.appendChild(mountPoint);
+
+        const playerVars: Record<string, string | number> = {
+          autoplay: 1,
+          controls: 1,
+          playsinline: 1,
+          rel: 0,
+          enablejsapi: 1,
+          modestbranding: 1,
+        };
+        if (typeof window !== 'undefined' && window.location.origin) {
+          playerVars.origin = window.location.origin;
+        }
+
+        player = new YT.Player(mountPoint, {
           videoId,
-          playerVars: {
-            autoplay: 1,
-            controls: 1,
-            playsinline: 1,
-            rel: 0,
-            origin: window.location.origin,
-          },
+          playerVars,
           events: {
             onReady: () => {
-              if (initialTime > 0) player?.seekTo(initialTime, true);
-              player?.playVideo();
+              if (isCancelled) return;
+              if (initialTime > 0) {
+                try {
+                  player?.seekTo(initialTime, true);
+                } catch {}
+              }
+              try {
+                player?.playVideo();
+              } catch {}
               heartbeat = setInterval(saveProgress, 15_000);
             },
             onStateChange: (event) => {
               if (event.data === YT.PlayerState.ENDED) saveProgress(true);
             },
-            onError: () => setFailed(true),
+            onError: (err) => {
+              console.warn('YouTube Player API Error event:', err);
+              if (!isCancelled) setFailed(true);
+            },
           },
         });
-      })
-      .catch((error: unknown) => {
+      } catch (error) {
         console.error('Unable to initialise YouTube player:', error);
-        setFailed(true);
-      });
+        if (!isCancelled) setFailed(true);
+      }
+    };
+
+    void initPlayer();
 
     return () => {
+      isCancelled = true;
       if (heartbeat) clearInterval(heartbeat);
       saveProgress();
-      disposed = true;
-      player?.destroy();
+      if (player) {
+        try {
+          player.destroy();
+        } catch {}
+      }
     };
   }, [videoId, profileId, tmdbId, mediaType, title, posterPath, seasonNumber, episodeNumber, initialTime]);
 
