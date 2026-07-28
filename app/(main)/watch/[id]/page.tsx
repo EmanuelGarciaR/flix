@@ -12,7 +12,8 @@ interface Props {
 }
 
 export default async function WatchPage({ params, searchParams }: Props) {
-  const { id: playbackId } = await params;
+  const { id: rawPlaybackId } = await params;
+  const playbackId = decodeURIComponent(rawPlaybackId);
   const { tmdbId, type, season, episode } = await searchParams;
   
   const profile = await getActiveProfile();
@@ -29,7 +30,11 @@ export default async function WatchPage({ params, searchParams }: Props) {
     ? `/tv/${tmdbId}${season ? `?season=${season}` : ""}`
     : `/movie/${tmdbId}`;
 
-  const youtubeVideoId = playbackId.startsWith('youtube:') ? playbackId.slice('youtube:'.length) : null;
+  const youtubeVideoId = playbackId.startsWith('youtube:')
+    ? playbackId.slice('youtube:'.length)
+    : playbackId.startsWith('youtube%3A')
+    ? playbackId.slice('youtube%3A'.length)
+    : null;
 
   if (youtubeVideoId && !/^[a-zA-Z0-9_-]{11}$/.test(youtubeVideoId)) {
     redirect(backUrl);
