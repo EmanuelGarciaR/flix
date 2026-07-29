@@ -16,7 +16,7 @@ export default async function WatchPage({ params, searchParams }: Props) {
   const { id: rawPlaybackId } = await params;
   const playbackId = decodeURIComponent(rawPlaybackId);
   const { tmdbId, type, season, episode } = await searchParams;
-  
+
   const profile = await getActiveProfile();
   if (!profile) {
     redirect('/login');
@@ -35,8 +35,8 @@ export default async function WatchPage({ params, searchParams }: Props) {
   const youtubeVideoId = playbackId.startsWith('youtube:')
     ? playbackId.slice('youtube:'.length)
     : playbackId.startsWith('youtube%3A')
-    ? playbackId.slice('youtube%3A'.length)
-    : null;
+      ? playbackId.slice('youtube%3A'.length)
+      : null;
 
   if (youtubeVideoId && !/^[a-zA-Z0-9_-]{11}$/.test(youtubeVideoId)) {
     redirect(backUrl);

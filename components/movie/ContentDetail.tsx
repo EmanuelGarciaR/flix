@@ -12,6 +12,8 @@ interface ContentDetailProps {
   providers?: any;
   tmdb: any;
   profileId?: string;
+  playableContent?: { available_regions: string[], mux_playback_id: string } | null;
+  userRegion?: string;
 }
 
 export function ContentDetail({
@@ -20,11 +22,13 @@ export function ContentDetail({
   providers,
   tmdb,
   profileId,
+  playableContent,
+  userRegion,
 }: ContentDetailProps) {
   const title = item.title || item.name || "Untitled";
   const backdropUrl = tmdb.backdrop(item.backdrop_path, "original");
   const posterUrl = tmdb.image(item.poster_path, "w500");
-  
+
   const releaseYear = item.release_date || item.first_air_date
     ? new Date(item.release_date || item.first_air_date).getFullYear()
     : null;
@@ -32,8 +36,8 @@ export function ContentDetail({
   const duration = item.runtime
     ? `${Math.floor(item.runtime / 60)}h ${item.runtime % 60}m`
     : item.number_of_seasons
-    ? `${item.number_of_seasons} Season${item.number_of_seasons > 1 ? 's' : ''}`
-    : null;
+      ? `${item.number_of_seasons} Season${item.number_of_seasons > 1 ? 's' : ''}`
+      : null;
 
   const rating = item.vote_average ? item.vote_average.toFixed(1) : null;
   const genres = item.genres || [];
@@ -50,7 +54,7 @@ export function ContentDetail({
     youtubeVideos[0];
 
   // The background trailer and Play use separate YouTube player instances.
-  const playUrl = buildWatchUrl(trailer?.key ? `youtube:${trailer.key}` : null, {
+  const playUrl = buildWatchUrl(playableContent?.mux_playback_id || null, {
     tmdbId: item.id,
     type: mediaType,
     season: mediaType === "tv" ? 1 : undefined,
@@ -59,8 +63,8 @@ export function ContentDetail({
 
   // Cast members (Top 5)
   const cast = item.credits?.cast?.slice(0, 5) || [];
-  const director = item.credits?.crew?.find((c: any) => c.job === "Director")?.name || 
-                   item.created_by?.[0]?.name;
+  const director = item.credits?.crew?.find((c: any) => c.job === "Director")?.name ||
+    item.created_by?.[0]?.name;
 
   return (
     <div className="flex flex-col gap-8">
@@ -98,13 +102,13 @@ export function ContentDetail({
               sizes="280px"
             />
           </div>
-          
+
           <div className="flex flex-col gap-6 flex-1 w-full">
             <div>
               <h1 className="text-display-lg-mobile md:text-display-lg font-bold text-on-background drop-shadow">
                 {title}
               </h1>
-              
+
               {/* Badges / Meta Info */}
               <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3 text-body-sm text-muted">
                 {releaseYear && (
@@ -181,7 +185,7 @@ export function ContentDetail({
                 </p>
               </div>
             )}
-            
+
             {/* Cast & Crew Summary */}
             <div className="flex flex-col gap-2 mt-2 border-t border-surface-bright/30 pt-6">
               {cast.length > 0 && (

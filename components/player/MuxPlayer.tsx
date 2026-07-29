@@ -129,9 +129,7 @@ export function MuxPlayerComponent({
 
       <MuxPlayer
         ref={playerRef}
-        {...(playbackId === 'demo-stream' || playbackId?.startsWith('http')
-          ? { src: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8' }
-          : { playbackId: playbackId })}
+        playbackId={playbackId}
         metadata={{
           video_id: `tmdb_${tmdbId}`,
           video_title: title,
