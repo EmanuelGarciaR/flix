@@ -4,6 +4,7 @@ import { ContentDetail } from '@/components/movie/ContentDetail';
 import { CastCrew } from '@/components/movie/CastCrew';
 import { ContentRow } from '@/components/home/ContentRow';
 import { notFound } from 'next/navigation';
+import { getTmdbLanguage } from '@/lib/i18n';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -13,12 +14,13 @@ export default async function MovieDetailPage({ params }: Props) {
   const { id } = await params;
   const profile = await getActiveProfile();
   const region = profile?.region || 'US';
+  const language = getTmdbLanguage(profile?.language);
 
   let movie;
   let providers;
   try {
     [movie, providers] = await Promise.all([
-      tmdb.movieDetails(Number(id)),
+      tmdb.movieDetails(Number(id), language),
       tmdb.providers('movie', Number(id)),
     ]);
   } catch (err) {

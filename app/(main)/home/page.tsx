@@ -1,26 +1,52 @@
 import { tmdb } from '@/lib/tmdb';
-import { getActiveProfile } from '@/lib/auth';
+import { getActiveProfile, getUserRegion } from '@/lib/auth';
+import { createClient } from '@/lib/supabase/server';
 import { ContentRow } from '@/components/home/ContentRow';
 import { HeroSection } from '@/components/home/HeroSection';
 import { ContinueWatchingRow } from '@/components/home/ContinueWatchingRow';
 import { getContinueWatching } from '@/app/actions/watch-history';
+import { getMessages, getTmdbLanguage } from '@/lib/i18n';
 
 export default async function HomePage() {
   const profile = await getActiveProfile();
-  const region = profile?.region || 'US';
+  const region = await getUserRegion();
+  const language = getTmdbLanguage(profile?.language);
+  const t = getMessages(profile?.language);
 
   // Parallel fetches
-  const [trending, popularMovies, popularTV, topRated, continueWatching] = await Promise.all([
-    tmdb.trending('all', 'week'),
-    tmdb.popular('movie', 1, region),
-    tmdb.popular('tv', 1, region),
-    tmdb.topRated('movie', 1, region),
+  const supabase = await createClient();
+  const [
+    trending,
+    popularMovies,
+    popularTV,
+    topRated,
+    continueWatching,
+    { data: playableContent }
+  ] = await Promise.all([
+    tmdb.trending('all', 'week', language),
+    tmdb.popular('movie', 1, region, language),
+    tmdb.popular('tv', 1, region, language),
+    tmdb.topRated('movie', 1, region, language),
     profile ? getContinueWatching(profile.id) : Promise.resolve([]),
+    supabase.from('playable_content').select('tmdb_id, available_regions')
   ]);
 
+  // Filter TMDB results against playable_content for best-effort region gating
+  const filterResults = (results: any[] = []) => {
+    return results.filter((item) => {
+      const dbEntry = playableContent?.find((pc) => pc.tmdb_id === item.id);
+      return dbEntry && dbEntry.available_regions.includes(region);
+    });
+  };
+
+  const trendingResults = filterResults(trending?.results);
+  const popularMoviesResults = filterResults(popularMovies?.results);
+  const popularTvResults = filterResults(popularTV?.results);
+  const topRatedResults = filterResults(topRated?.results);
+
   // Get hero from trending first movie
-  const hero = trending.results?.find((r: any) => r.media_type === 'movie' && r.backdrop_path) || 
-               trending.results?.[0];
+  const hero = trendingResults?.find((r: any) => r.media_type === 'movie' && r.backdrop_path) ||
+    trendingResults?.[0];
 
   return (
     <div className="flex flex-col gap-12 pb-12">
@@ -36,30 +62,30 @@ export default async function HomePage() {
       )}
 
       {continueWatching && continueWatching.length > 0 && (
-        <ContinueWatchingRow items={continueWatching} />
+        <ContinueWatchingRow items={continueWatching} title={t.continueWatching} />
       )}
 
       <ContentRow
-        title="Trending This Week"
-        items={trending.results?.slice(0, 15) || []}
+        title={t.trendingThisWeek}
+        items={trendingResults?.slice(0, 15) || []}
         getImage={(item) => tmdb.image(item.poster_path, 'w342')}
       />
 
       <ContentRow
-        title="Popular Movies"
-        items={popularMovies.results?.slice(0, 15) || []}
+        title={t.popularMovies}
+        items={popularMoviesResults?.slice(0, 15) || []}
         getImage={(item) => tmdb.image(item.poster_path, 'w342')}
       />
 
       <ContentRow
-        title="Popular TV Shows"
-        items={popularTV.results?.slice(0, 15) || []}
+        title={t.popularTvShows}
+        items={popularTvResults?.slice(0, 15) || []}
         getImage={(item) => tmdb.image(item.poster_path, 'w342')}
       />
 
       <ContentRow
-        title="Top Rated Movies"
-        items={topRated.results?.slice(0, 15) || []}
+        title={t.topRatedMovies}
+        items={topRatedResults?.slice(0, 15) || []}
         getImage={(item) => tmdb.image(item.poster_path, 'w342')}
       />
     </div>
