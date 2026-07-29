@@ -1,10 +1,9 @@
 import { getActiveProfile } from "@/lib/auth";
 import { getMyList } from "@/app/actions/my-list";
 import { tmdb } from "@/lib/tmdb";
-import { MovieCard } from "@/components/ui/MovieCard";
+import { MyListCard } from "@/components/movie/MyListCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { getTmdbLanguage } from "@/lib/i18n";
 
 export default async function MyListPage() {
@@ -37,6 +36,7 @@ export default async function MyListPage() {
           poster_path: details.poster_path,
           vote_average: details.vote_average,
           release_date: details.release_date || details.first_air_date,
+          overview: details.overview,
         };
       } catch (err) {
         console.error(`Error loading TMDB details for watchlist item ${item.tmdb_id}:`, err);
@@ -61,7 +61,7 @@ export default async function MyListPage() {
           actionHref="/browse"
         />
       ) : (
-        <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-2">
           {validItems.map((item: any) => {
             const href = `/${item.media_type}/${item.tmdb_id}`;
             const year = item.release_date
@@ -73,13 +73,15 @@ export default async function MyListPage() {
             const imageUrl = tmdb.image(item.poster_path, "w342");
 
             return (
-              <Link key={item.id} href={href}>
-                <MovieCard
-                  title={item.title || "Untitled"}
-                  metadata={metadata}
-                  imageUrl={imageUrl || undefined}
-                />
-              </Link>
+              <MyListCard
+                key={item.id}
+                id={item.id}
+                href={href}
+                title={item.title || "Untitled"}
+                metadata={metadata}
+                overview={item.overview}
+                imageUrl={imageUrl || undefined}
+              />
             );
           })}
         </div>
