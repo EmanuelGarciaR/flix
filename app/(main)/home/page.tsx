@@ -6,12 +6,14 @@ import { HeroSection } from '@/components/home/HeroSection';
 import { ContinueWatchingRow } from '@/components/home/ContinueWatchingRow';
 import { getContinueWatching } from '@/app/actions/watch-history';
 import { getMessages, getTmdbLanguage } from '@/lib/i18n';
+import { getDemoMode } from '@/lib/demo';
 
 export default async function HomePage() {
   const profile = await getActiveProfile();
   const region = await getUserRegion();
   const language = getTmdbLanguage(profile?.language);
   const t = getMessages(profile?.language);
+  const demoMode = await getDemoMode();
 
   // Parallel fetches
   const supabase = await createClient();
@@ -33,6 +35,7 @@ export default async function HomePage() {
 
   // Filter TMDB results against playable_content for best-effort region gating
   const filterResults = (results: any[] = []) => {
+    if (demoMode) return results;
     return results.filter((item) => {
       const dbEntry = playableContent?.find((pc) => pc.tmdb_id === item.id);
       return dbEntry && dbEntry.available_regions.includes(region);

@@ -14,6 +14,7 @@ interface ContentDetailProps {
   profileId?: string;
   playableContent?: { available_regions: string[], mux_playback_id: string } | null;
   userRegion?: string;
+  isDemoMode?: boolean;
 }
 
 export function ContentDetail({
@@ -24,6 +25,7 @@ export function ContentDetail({
   profileId,
   playableContent,
   userRegion,
+  isDemoMode,
 }: ContentDetailProps) {
   const title = item.title || item.name || "Untitled";
   const backdropUrl = tmdb.backdrop(item.backdrop_path, "original");
@@ -59,7 +61,12 @@ export function ContentDetail({
     type: mediaType,
     season: mediaType === "tv" ? 1 : undefined,
     episode: mediaType === "tv" ? 1 : undefined,
+    demoMode: isDemoMode ? 'all' : undefined,
   });
+
+  const isPlayable = isDemoMode
+    ? !!playableContent?.mux_playback_id
+    : playableContent?.available_regions?.includes(userRegion || 'US') && !!playableContent?.mux_playback_id;
 
   // Cast members (Top 5)
   const cast = item.credits?.cast?.slice(0, 5) || [];
@@ -153,12 +160,18 @@ export function ContentDetail({
 
             {/* Action Buttons */}
             <div className="flex flex-wrap items-center gap-4 w-full">
-              <Link href={playUrl} className="w-full sm:w-auto">
-                <Button size="lg" className="w-full gap-2">
-                  <Play fill="currentColor" size={20} />
-                  Play
+              {isPlayable ? (
+                <Link href={playUrl} className="w-full sm:w-auto">
+                  <Button size="lg" className="w-full gap-2">
+                    <Play fill="currentColor" size={20} />
+                    Play
+                  </Button>
+                </Link>
+              ) : (
+                <Button size="lg" className="w-full sm:w-auto gap-2" disabled>
+                  Not available
                 </Button>
-              </Link>
+              )}
               {profileId && (
                 <MyListButton
                   profileId={profileId}

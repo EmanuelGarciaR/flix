@@ -2,6 +2,7 @@ import { Header } from "@/components/layout/Header"
 import { BottomNav } from "@/components/layout/BottomNav"
 import { LanguageProvider } from "@/components/providers/LanguageProvider"
 import { getActiveProfile } from "@/lib/auth"
+import { DemoBanner } from "@/components/layout/DemoBanner"
 
 export default async function MainLayout({
   children,
@@ -14,6 +15,7 @@ export default async function MainLayout({
     <LanguageProvider locale={profile?.language}>
       <div className="flex min-h-screen flex-col">
         <Header />
+        <DemoBanner />
         <main className="flex-1 pb-20 md:pb-0">{children}</main>
         <BottomNav />
       </div>

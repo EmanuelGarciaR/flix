@@ -5,6 +5,7 @@ import { MovieCard } from "@/components/ui/MovieCard";
 import { Button } from "@/components/ui/Button";
 import Link from "next/link";
 import { getTmdbLanguage } from "@/lib/i18n";
+import { getDemoMode } from "@/lib/demo";
 
 interface Props {
   searchParams: Promise<{ genre?: string }>;
@@ -26,6 +27,7 @@ export default async function BrowsePage({ searchParams }: Props) {
   const profile = await getActiveProfile();
   const region = await getUserRegion();
   const language = getTmdbLanguage(profile?.language);
+  const demoMode = await getDemoMode();
 
   const supabase = await createClient();
   const { data: playableContent } = await supabase
@@ -38,7 +40,10 @@ export default async function BrowsePage({ searchParams }: Props) {
       const data = await tmdb.popular('movie', 1, region, language);
       results = data.results || [];
     } else {
-      const data = await tmdb.discover({ with_genres: genre, region, watch_region: region }, language);
+      const data = await tmdb.discover(
+        { with_genres: genre, region, watch_region: demoMode ? undefined : region }, 
+        language
+      );
       results = data.results || [];
     }
   } catch (err) {
@@ -47,6 +52,7 @@ export default async function BrowsePage({ searchParams }: Props) {
 
   // Filter TMDB results against playable_content for best-effort region gating
   const filterResults = (items: any[] = []) => {
+    if (demoMode) return items;
     return items.filter((item) => {
       const dbEntry = playableContent?.find((pc) => pc.tmdb_id === item.id);
       return dbEntry && dbEntry.available_regions.includes(region);
