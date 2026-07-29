@@ -1,6 +1,7 @@
 'use server';
 import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
+import { normalizeLocale } from '@/lib/i18n';
 
 export async function updateProfileRegion(region: string) {
   const supabase = await createClient();
@@ -38,7 +39,7 @@ export async function updateProfileSettings({
   if (!user) throw new Error('Not authenticated');
 
   const updateFields: any = {};
-  if (language !== undefined) updateFields.language = language;
+  if (language !== undefined) updateFields.language = normalizeLocale(language);
   if (maturityRating !== undefined) updateFields.maturity_rating = maturityRating;
   if (isKids !== undefined) updateFields.is_kids = isKids;
 

@@ -5,12 +5,14 @@ import { MovieCard } from "@/components/ui/MovieCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { getTmdbLanguage } from "@/lib/i18n";
 
 export default async function MyListPage() {
   const profile = await getActiveProfile();
   if (!profile) {
     redirect("/login");
   }
+  const language = getTmdbLanguage(profile.language);
 
   let listItems = [];
   try {
@@ -25,9 +27,9 @@ export default async function MyListPage() {
       try {
         let details;
         if (item.media_type === "tv") {
-          details = await tmdb.tvDetails(item.tmdb_id);
+          details = await tmdb.tvDetails(item.tmdb_id, language);
         } else {
-          details = await tmdb.movieDetails(item.tmdb_id);
+          details = await tmdb.movieDetails(item.tmdb_id, language);
         }
         return {
           ...item,

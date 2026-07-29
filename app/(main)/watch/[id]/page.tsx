@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { tmdb } from '@/lib/tmdb';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { getTmdbLanguage } from '@/lib/i18n';
 
 interface Props {
   params: Promise<{ id: string }>; // id corresponds to Mux playbackId
@@ -20,6 +21,7 @@ export default async function WatchPage({ params, searchParams }: Props) {
   if (!profile) {
     redirect('/login');
   }
+  const language = getTmdbLanguage(profile.language);
 
   if (!tmdbId || !type) {
     redirect('/home');
@@ -69,14 +71,14 @@ export default async function WatchPage({ params, searchParams }: Props) {
 
   try {
     if (isTv) {
-      const show = await tmdb.tvDetails(Number(tmdbId));
+      const show = await tmdb.tvDetails(Number(tmdbId), language);
       title = show.name || "TV Show";
       posterPath = show.poster_path || "";
       if (seasonNum !== null && epNum !== null) {
         title = `${title} (S${seasonNum}:E${epNum})`;
       }
     } else {
-      const movie = await tmdb.movieDetails(Number(tmdbId));
+      const movie = await tmdb.movieDetails(Number(tmdbId), language);
       title = movie.title || "Movie";
       posterPath = movie.poster_path || "";
     }

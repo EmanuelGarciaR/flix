@@ -6,15 +6,16 @@ import { buildWatchUrl } from "@/lib/playback";
 
 interface ContinueWatchingRowProps {
   items: any[];
+  title?: string;
 }
 
-export function ContinueWatchingRow({ items }: ContinueWatchingRowProps) {
+export function ContinueWatchingRow({ items, title = "Continue Watching" }: ContinueWatchingRowProps) {
   if (!items || items.length === 0) return null;
 
   return (
     <section className="px-4 md:px-12 flex flex-col gap-4">
       <h2 className="text-headline-sm text-on-background border-l-4 border-primary pl-3">
-        Continue Watching
+        {title}
       </h2>
       <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-surface-bright scrollbar-track-transparent">
         {items.map((item) => {

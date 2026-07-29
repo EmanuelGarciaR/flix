@@ -4,17 +4,20 @@ import { ContentRow } from '@/components/home/ContentRow';
 import { HeroSection } from '@/components/home/HeroSection';
 import { ContinueWatchingRow } from '@/components/home/ContinueWatchingRow';
 import { getContinueWatching } from '@/app/actions/watch-history';
+import { getMessages, getTmdbLanguage } from '@/lib/i18n';
 
 export default async function HomePage() {
   const profile = await getActiveProfile();
   const region = profile?.region || 'US';
+  const language = getTmdbLanguage(profile?.language);
+  const t = getMessages(profile?.language);
 
   // Parallel fetches
   const [trending, popularMovies, popularTV, topRated, continueWatching] = await Promise.all([
-    tmdb.trending('all', 'week'),
-    tmdb.popular('movie', 1, region),
-    tmdb.popular('tv', 1, region),
-    tmdb.topRated('movie', 1, region),
+    tmdb.trending('all', 'week', language),
+    tmdb.popular('movie', 1, region, language),
+    tmdb.popular('tv', 1, region, language),
+    tmdb.topRated('movie', 1, region, language),
     profile ? getContinueWatching(profile.id) : Promise.resolve([]),
   ]);
 
@@ -36,29 +39,29 @@ export default async function HomePage() {
       )}
 
       {continueWatching && continueWatching.length > 0 && (
-        <ContinueWatchingRow items={continueWatching} />
+        <ContinueWatchingRow items={continueWatching} title={t.continueWatching} />
       )}
 
       <ContentRow
-        title="Trending This Week"
+        title={t.trendingThisWeek}
         items={trending.results?.slice(0, 15) || []}
         getImage={(item) => tmdb.image(item.poster_path, 'w342')}
       />
 
       <ContentRow
-        title="Popular Movies"
+        title={t.popularMovies}
         items={popularMovies.results?.slice(0, 15) || []}
         getImage={(item) => tmdb.image(item.poster_path, 'w342')}
       />
 
       <ContentRow
-        title="Popular TV Shows"
+        title={t.popularTvShows}
         items={popularTV.results?.slice(0, 15) || []}
         getImage={(item) => tmdb.image(item.poster_path, 'w342')}
       />
 
       <ContentRow
-        title="Top Rated Movies"
+        title={t.topRatedMovies}
         items={topRated.results?.slice(0, 15) || []}
         getImage={(item) => tmdb.image(item.poster_path, 'w342')}
       />

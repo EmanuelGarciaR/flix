@@ -3,6 +3,7 @@ import { getActiveProfile } from "@/lib/auth";
 import { MovieCard } from "@/components/ui/MovieCard";
 import { Button } from "@/components/ui/Button";
 import Link from "next/link";
+import { getTmdbLanguage } from "@/lib/i18n";
 
 interface Props {
   searchParams: Promise<{ genre?: string }>;
@@ -23,14 +24,15 @@ export default async function BrowsePage({ searchParams }: Props) {
   const { genre = 'all' } = await searchParams;
   const profile = await getActiveProfile();
   const region = profile?.region || 'US';
+  const language = getTmdbLanguage(profile?.language);
 
   let results = [];
   try {
     if (genre === 'all') {
-      const data = await tmdb.popular('movie', 1, region);
+      const data = await tmdb.popular('movie', 1, region, language);
       results = data.results || [];
     } else {
-      const data = await tmdb.discover({ with_genres: genre, region, watch_region: region });
+      const data = await tmdb.discover({ with_genres: genre, region, watch_region: region }, language);
       results = data.results || [];
     }
   } catch (err) {

@@ -6,6 +6,7 @@ import { EpisodeList } from '@/components/movie/EpisodeList';
 import { CastCrew } from '@/components/movie/CastCrew';
 import { ContentRow } from '@/components/home/ContentRow';
 import { notFound } from 'next/navigation';
+import { getTmdbLanguage } from '@/lib/i18n';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -17,12 +18,13 @@ export default async function TVDetailPage({ params, searchParams }: Props) {
   const { season: seasonParam } = await searchParams;
   const profile = await getActiveProfile();
   const region = profile?.region || 'US';
+  const language = getTmdbLanguage(profile?.language);
 
   let tv;
   let providers;
   try {
     [tv, providers] = await Promise.all([
-      tmdb.tvDetails(Number(id)),
+      tmdb.tvDetails(Number(id), language),
       tmdb.providers('tv', Number(id)),
     ]);
   } catch (err) {
@@ -39,7 +41,7 @@ export default async function TVDetailPage({ params, searchParams }: Props) {
 
   let seasonData = { episodes: [] };
   try {
-    seasonData = await tmdb.seasonDetails(Number(id), seasonNumber);
+    seasonData = await tmdb.seasonDetails(Number(id), seasonNumber, language);
   } catch (err) {
     console.error(`Error loading TV season ${seasonNumber} detail:`, err);
   }

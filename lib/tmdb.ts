@@ -1,6 +1,7 @@
 const BASE = process.env.TMDB_BASE_URL || 'https://api.themoviedb.org/3';
 const KEY = process.env.TMDB_API_KEY || 'ffefb8a1d835920bd5152230950e867e';
 const IMG = process.env.TMDB_IMAGE_BASE_URL || 'https://image.tmdb.org/t/p';
+const DEFAULT_LANGUAGE = 'en-US';
 
 async function fetchTMDB(endpoint: string, params: Record<string, string> = {}) {
   const url = new URL(`${BASE}${endpoint}`);
@@ -14,39 +15,39 @@ async function fetchTMDB(endpoint: string, params: Record<string, string> = {}) 
 
 export const tmdb = {
   // Trending
-  trending: (mediaType: 'movie' | 'tv' | 'all' = 'all', timeWindow: 'day' | 'week' = 'week') =>
-    fetchTMDB(`/trending/${mediaType}/${timeWindow}`, { language: 'en-US' }),
+  trending: (mediaType: 'movie' | 'tv' | 'all' = 'all', timeWindow: 'day' | 'week' = 'week', language = DEFAULT_LANGUAGE) =>
+    fetchTMDB(`/trending/${mediaType}/${timeWindow}`, { language }),
 
   // Popular
-  popular: (mediaType: 'movie' | 'tv', page = 1, region = 'US') =>
-    fetchTMDB(`/${mediaType}/popular`, { language: 'en-US', page: page.toString(), region }),
+  popular: (mediaType: 'movie' | 'tv', page = 1, region = 'US', language = DEFAULT_LANGUAGE) =>
+    fetchTMDB(`/${mediaType}/popular`, { language, page: page.toString(), region }),
 
   // Top Rated
-  topRated: (mediaType: 'movie' | 'tv', page = 1, region = 'US') =>
-    fetchTMDB(`/${mediaType}/top_rated`, { language: 'en-US', page: page.toString(), region }),
+  topRated: (mediaType: 'movie' | 'tv', page = 1, region = 'US', language = DEFAULT_LANGUAGE) =>
+    fetchTMDB(`/${mediaType}/top_rated`, { language, page: page.toString(), region }),
 
   // Discover with filters
-  discover: (params: Record<string, string>) =>
-    fetchTMDB('/discover/movie', { ...params, language: 'en-US', sort_by: 'popularity.desc' }),
+  discover: (params: Record<string, string>, language = DEFAULT_LANGUAGE) =>
+    fetchTMDB('/discover/movie', { ...params, language, sort_by: 'popularity.desc' }),
 
   // Discover TV
-  discoverTV: (params: Record<string, string>) =>
-    fetchTMDB('/discover/tv', { ...params, language: 'en-US', sort_by: 'popularity.desc' }),
+  discoverTV: (params: Record<string, string>, language = DEFAULT_LANGUAGE) =>
+    fetchTMDB('/discover/tv', { ...params, language, sort_by: 'popularity.desc' }),
 
   // Search
-  search: (query: string, page = 1) =>
-    fetchTMDB('/search/multi', { query, language: 'en-US', page: page.toString(), include_adult: 'false' }),
+  search: (query: string, page = 1, language = DEFAULT_LANGUAGE) =>
+    fetchTMDB('/search/multi', { query, language, page: page.toString(), include_adult: 'false' }),
 
   // Details
-  movieDetails: (id: number) =>
-    fetchTMDB(`/movie/${id}`, { language: 'en-US', append_to_response: 'credits,videos,watch/providers,recommendations' }),
+  movieDetails: (id: number, language = DEFAULT_LANGUAGE) =>
+    fetchTMDB(`/movie/${id}`, { language, append_to_response: 'credits,videos,watch/providers,recommendations' }),
   
-  tvDetails: (id: number) =>
-    fetchTMDB(`/tv/${id}`, { language: 'en-US', append_to_response: 'credits,videos,watch/providers,recommendations,aggregate_credits' }),
+  tvDetails: (id: number, language = DEFAULT_LANGUAGE) =>
+    fetchTMDB(`/tv/${id}`, { language, append_to_response: 'credits,videos,watch/providers,recommendations,aggregate_credits' }),
 
   // Season/Episode
-  seasonDetails: (tvId: number, seasonNumber: number) =>
-    fetchTMDB(`/tv/${tvId}/season/${seasonNumber}`, { language: 'en-US' }),
+  seasonDetails: (tvId: number, seasonNumber: number, language = DEFAULT_LANGUAGE) =>
+    fetchTMDB(`/tv/${tvId}/season/${seasonNumber}`, { language }),
 
   // Providers (Regional)
   providers: (mediaType: 'movie' | 'tv', id: number) =>
