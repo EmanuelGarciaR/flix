@@ -4,7 +4,7 @@ import { MovieCard } from "@/components/ui/MovieCard";
 import { Button } from "@/components/ui/Button";
 import Link from "next/link";
 import { getTmdbLanguage } from "@/lib/i18n";
-import { isDemoModeActive, getPlayableMoviesForRegion } from "@/lib/region-access";
+import { isDemoModeActive, getPlayableMoviesForRegion, fetchTmdbDetails } from "@/lib/region-access";
 
 interface Props {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -38,19 +38,7 @@ export default async function BrowsePage({ searchParams }: Props) {
       const playableContent = await getPlayableMoviesForRegion(region);
 
       const tmdbItems = await Promise.all(
-        playableContent.map(async (item) => {
-          try {
-            if (item.media_type === 'movie') {
-              const detail = await tmdb.movieDetails(item.tmdb_id, language);
-              return { ...detail, media_type: 'movie' };
-            } else {
-              const detail = await tmdb.tvDetails(item.tmdb_id, language);
-              return { ...detail, media_type: 'tv' };
-            }
-          } catch {
-            return null;
-          }
-        })
+        playableContent.map((item) => fetchTmdbDetails(item.tmdb_id, language))
       );
 
       const validItems = tmdbItems.filter(Boolean);

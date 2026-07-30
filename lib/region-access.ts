@@ -1,13 +1,16 @@
 import { createClient } from '@/lib/supabase/server';
 import { getActiveProfile } from '@/lib/auth';
+import { tmdb } from '@/lib/tmdb';
 
+/**
+ * Matches the actual `playable_content` table schema.
+ * Columns: tmdb_id, mux_playback_id, mux_asset_id, available_regions
+ */
 export type PlayableContent = {
-  id: string;
   tmdb_id: number;
-  media_type: 'movie' | 'tv';
-  mux_playback_id?: string;
+  mux_playback_id: string | null;
+  mux_asset_id: string | null;
   available_regions: string[];
-  created_at: string;
 };
 
 export async function getUserRegion(): Promise<string> {
@@ -40,7 +43,7 @@ export async function isTitlePlayableInRegion(tmdbId: number, region: string): P
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('playable_content')
-    .select('id')
+    .select('tmdb_id')
     .eq('tmdb_id', tmdbId)
     .contains('available_regions', [region])
     .maybeSingle();
@@ -50,4 +53,34 @@ export async function isTitlePlayableInRegion(tmdbId: number, region: string): P
     return false;
   }
   return !!data;
+}
+
+/**
+ * Given a tmdb_id (where we don't know if it's a movie or TV show),
+ * try movieDetails first; if that 404s, try tvDetails.
+ * Returns the TMDB detail object with a `media_type` field attached.
+ */
+export async function fetchTmdbDetails(
+  tmdbId: number,
+  language?: string
+): Promise<(any & { media_type: 'movie' | 'tv' }) | null> {
+  try {
+    const movie = await tmdb.movieDetails(tmdbId, language);
+    if (movie && movie.id) {
+      return { ...movie, media_type: 'movie' as const };
+    }
+  } catch {
+    // Not a movie — try TV
+  }
+
+  try {
+    const tv = await tmdb.tvDetails(tmdbId, language);
+    if (tv && tv.id) {
+      return { ...tv, media_type: 'tv' as const };
+    }
+  } catch {
+    // Not found as either
+  }
+
+  return null;
 }
