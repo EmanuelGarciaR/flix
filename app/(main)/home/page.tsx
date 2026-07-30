@@ -5,25 +5,96 @@ import { HeroSection } from '@/components/home/HeroSection';
 import { ContinueWatchingRow } from '@/components/home/ContinueWatchingRow';
 import { getContinueWatching } from '@/app/actions/watch-history';
 import { getMessages, getTmdbLanguage } from '@/lib/i18n';
+import { isDemoModeActive, getPlayableMoviesForRegion } from '@/lib/region-access';
 
-export default async function HomePage() {
+interface Props {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+export default async function HomePage({ searchParams }: Props) {
   const profile = await getActiveProfile();
   const region = profile?.region || 'US';
   const language = getTmdbLanguage(profile?.language);
   const t = getMessages(profile?.language);
 
-  // Parallel fetches
-  const [trending, popularMovies, popularTV, topRated, continueWatching] = await Promise.all([
+  const resolvedParams = await searchParams;
+  const isDemo = isDemoModeActive(resolvedParams);
+
+  const continueWatching = profile ? await getContinueWatching(profile.id) : [];
+
+  // ── REGION-RESTRICTED MODE ──────────────────────────────────────────────────
+  if (!isDemo) {
+    const playableContent = await getPlayableMoviesForRegion(region);
+
+    if (playableContent.length === 0) {
+      return (
+        <div className="flex flex-col gap-6 pb-12 px-4 md:px-12 pt-32 items-center justify-center text-center">
+          <h2 className="text-display-sm text-on-background">
+            No hay contenido disponible en tu región todavía
+          </h2>
+          <p className="text-body-lg text-muted mt-2">Tu región actual es: <strong>{region}</strong></p>
+        </div>
+      );
+    }
+
+    // Fetch TMDB metadata only for playable IDs
+    const tmdbItems = await Promise.all(
+      playableContent.map(async (item) => {
+        try {
+          if (item.media_type === 'movie') {
+            const detail = await tmdb.movieDetails(item.tmdb_id, language);
+            return { ...detail, media_type: 'movie' };
+          } else {
+            const detail = await tmdb.tvDetails(item.tmdb_id, language);
+            return { ...detail, media_type: 'tv' };
+          }
+        } catch {
+          return null;
+        }
+      })
+    );
+
+    const validItems = tmdbItems.filter(Boolean) as any[];
+    const hero = validItems.find((r) => r.backdrop_path) || validItems[0];
+
+    return (
+      <div className="flex flex-col gap-12 pb-12">
+        {hero && (
+          <HeroSection
+            title={hero.title || hero.name}
+            overview={hero.overview}
+            backdropUrl={tmdb.backdrop(hero.backdrop_path, 'w1280')}
+            tmdbId={hero.id}
+            mediaType={hero.media_type || 'movie'}
+            profileId={profile?.id}
+            detailsUrl={`/${hero.media_type || 'movie'}/${hero.id}`}
+          />
+        )}
+
+        {continueWatching && continueWatching.length > 0 && (
+          <ContinueWatchingRow items={continueWatching} title={t.continueWatching} />
+        )}
+
+        <ContentRow
+          title="Available in your Region"
+          items={validItems}
+          getImage={(item) => tmdb.image(item.poster_path, 'w342')}
+          demoMode={false}
+        />
+      </div>
+    );
+  }
+
+  // ── DEMO MODE — full unfiltered TMDB catalog ────────────────────────────────
+  const [trending, popularMovies, popularTV, topRated] = await Promise.all([
     tmdb.trending('all', 'week', language),
     tmdb.popular('movie', 1, region, language),
     tmdb.popular('tv', 1, region, language),
     tmdb.topRated('movie', 1, region, language),
-    profile ? getContinueWatching(profile.id) : Promise.resolve([]),
   ]);
 
-  // Get hero from trending first movie
-  const hero = trending.results?.find((r: any) => r.media_type === 'movie' && r.backdrop_path) || 
-               trending.results?.[0];
+  const hero = trending.results?.find((r: any) => r.media_type === 'movie' && r.backdrop_path) ||
+    trending.results?.[0];
 
   return (
     <div className="flex flex-col gap-12 pb-12">
@@ -35,6 +106,7 @@ export default async function HomePage() {
           tmdbId={hero.id}
           mediaType={hero.media_type || 'movie'}
           profileId={profile?.id}
+          detailsUrl={`/${hero.media_type || 'movie'}/${hero.id}?demoMode=all`}
         />
       )}
 
@@ -46,24 +118,28 @@ export default async function HomePage() {
         title={t.trendingThisWeek}
         items={trending.results?.slice(0, 15) || []}
         getImage={(item) => tmdb.image(item.poster_path, 'w342')}
+        demoMode={true}
       />
 
       <ContentRow
         title={t.popularMovies}
         items={popularMovies.results?.slice(0, 15) || []}
         getImage={(item) => tmdb.image(item.poster_path, 'w342')}
+        demoMode={true}
       />
 
       <ContentRow
         title={t.popularTvShows}
         items={popularTV.results?.slice(0, 15) || []}
         getImage={(item) => tmdb.image(item.poster_path, 'w342')}
+        demoMode={true}
       />
 
       <ContentRow
         title={t.topRatedMovies}
         items={topRated.results?.slice(0, 15) || []}
         getImage={(item) => tmdb.image(item.poster_path, 'w342')}
+        demoMode={true}
       />
     </div>
   );

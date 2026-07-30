@@ -13,6 +13,7 @@ interface ContentDetailProps {
   providers?: any;
   tmdb: any;
   profileId?: string;
+  showPlayButton?: boolean;
 }
 
 export function ContentDetail({
@@ -21,6 +22,7 @@ export function ContentDetail({
   providers,
   tmdb,
   profileId,
+  showPlayButton = true,
 }: ContentDetailProps) {
   const title = item.title || item.name || "Untitled";
   const backdropUrl = tmdb.backdrop(item.backdrop_path, "original");
@@ -150,12 +152,14 @@ export function ContentDetail({
 
             {/* Action Buttons */}
             <div className="flex flex-wrap items-center gap-4 w-full">
-              <Link href={playUrl} className="w-full sm:w-auto">
-                <Button size="lg" className="w-full gap-2">
-                  <Play fill="currentColor" size={20} />
-                  Play
-                </Button>
-              </Link>
+              {showPlayButton && (
+                <Link href={playUrl} className="w-full sm:w-auto">
+                  <Button size="lg" className="w-full gap-2">
+                    <Play fill="currentColor" size={20} />
+                    Play
+                  </Button>
+                </Link>
+              )}
               {profileId && (
                 <MyListButton
                   profileId={profileId}

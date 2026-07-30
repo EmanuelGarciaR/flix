@@ -12,6 +12,7 @@ interface EpisodeListProps {
   profileId?: string;
   tmdb: any;
   videos?: any[];
+  showPlayButton?: boolean;
 }
 
 export async function EpisodeList({
@@ -21,6 +22,7 @@ export async function EpisodeList({
   profileId,
   tmdb,
   videos,
+  showPlayButton = true,
 }: EpisodeListProps) {
   if (!episodes || episodes.length === 0) return null;
 
@@ -70,12 +72,8 @@ export async function EpisodeList({
             episode: episode.episode_number,
           });
 
-          return (
-            <Link
-              key={episode.id}
-              href={playUrl}
-              className="group flex flex-col gap-3 rounded bg-surface-container/30 border border-surface-bright/20 p-3 hover:bg-surface-container/50 transition-colors"
-            >
+          const cardContent = (
+            <>
               {/* Thumbnail */}
               <div className="relative aspect-[16/9] w-full overflow-hidden rounded bg-surface-container border border-surface-bright/35">
                 <ImageWithFallback
@@ -85,11 +83,13 @@ export async function EpisodeList({
                   className="object-cover"
                   sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                 />
-                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300">
-                  <div className="rounded-full bg-primary p-3 text-on-primary shadow-lg transform scale-90 group-hover:scale-100 transition-transform duration-300">
-                    <Play fill="currentColor" size={16} />
+                {showPlayButton && (
+                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300">
+                    <div className="rounded-full bg-primary p-3 text-on-primary shadow-lg transform scale-90 group-hover:scale-100 transition-transform duration-300">
+                      <Play fill="currentColor" size={16} />
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Progress bar overlay */}
                 {episodeProgress !== undefined && (
@@ -120,7 +120,24 @@ export async function EpisodeList({
                   </p>
                 )}
               </div>
+            </>
+          );
+
+          return showPlayButton ? (
+            <Link
+              key={episode.id}
+              href={playUrl}
+              className="group flex flex-col gap-3 rounded bg-surface-container/30 border border-surface-bright/20 p-3 hover:bg-surface-container/50 transition-colors cursor-pointer"
+            >
+              {cardContent}
             </Link>
+          ) : (
+            <div
+              key={episode.id}
+              className="flex flex-col gap-3 rounded bg-surface-container/30 border border-surface-bright/20 p-3 opacity-75"
+            >
+              {cardContent}
+            </div>
           );
         })}
       </div>

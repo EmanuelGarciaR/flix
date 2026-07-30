@@ -2,6 +2,7 @@ import { Header } from "@/components/layout/Header"
 import { BottomNav } from "@/components/layout/BottomNav"
 import { LanguageProvider } from "@/components/providers/LanguageProvider"
 import { getActiveProfile } from "@/lib/auth"
+import { Suspense } from "react"
 
 export default async function MainLayout({
   children,
@@ -13,9 +14,13 @@ export default async function MainLayout({
   return (
     <LanguageProvider locale={profile?.language}>
       <div className="flex min-h-screen flex-col">
-        <Header />
+        <Suspense fallback={null}>
+          <Header />
+        </Suspense>
         <main className="flex-1 pb-20 md:pb-0">{children}</main>
-        <BottomNav />
+        <Suspense fallback={null}>
+          <BottomNav />
+        </Suspense>
       </div>
     </LanguageProvider>
   )

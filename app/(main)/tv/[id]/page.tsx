@@ -7,18 +7,25 @@ import { CastCrew } from '@/components/movie/CastCrew';
 import { ContentRow } from '@/components/home/ContentRow';
 import { notFound } from 'next/navigation';
 import { getTmdbLanguage } from '@/lib/i18n';
+import { isDemoModeActive, isTitlePlayableInRegion } from '@/lib/region-access';
+import Link from 'next/link';
 
 interface Props {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ season?: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 export default async function TVDetailPage({ params, searchParams }: Props) {
   const { id } = await params;
-  const { season: seasonParam } = await searchParams;
+  const resolvedParams = await searchParams;
+  const isDemo = isDemoModeActive(resolvedParams);
+  const seasonParam = resolvedParams.season as string | undefined;
+
   const profile = await getActiveProfile();
   const region = profile?.region || 'US';
   const language = getTmdbLanguage(profile?.language);
+
+  const isPlayable = await isTitlePlayableInRegion(Number(id), region);
 
   let tv;
   let providers;
@@ -56,8 +63,9 @@ export default async function TVDetailPage({ params, searchParams }: Props) {
         providers={providersByRegion}
         tmdb={tmdb}
         profileId={profile?.id}
+        showPlayButton={isDemo || isPlayable}
       />
-      
+
       {tv.seasons && tv.seasons.length > 0 && (
         <>
           <SeasonSelector
@@ -71,17 +79,19 @@ export default async function TVDetailPage({ params, searchParams }: Props) {
             profileId={profile?.id}
             tmdb={tmdb}
             videos={tv.videos?.results || []}
+            showPlayButton={isDemo || isPlayable}
           />
         </>
       )}
 
       <CastCrew cast={tv.credits?.cast || []} tmdb={tmdb} />
-      
+
       {tv.recommendations?.results && tv.recommendations.results.length > 0 && (
         <ContentRow
           title="Similar Titles"
           items={tv.recommendations.results}
           getImage={(item) => tmdb.image(item.poster_path, 'w342')}
+          demoMode={isDemo}
         />
       )}
     </div>
