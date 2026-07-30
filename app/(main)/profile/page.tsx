@@ -1,10 +1,9 @@
 import { redirect } from "next/navigation";
 import { User, Settings, CreditCard, LogOut, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { getUser, getProfile } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { updateProfileRegion } from "@/app/actions/profile";
-import { revalidatePath } from "next/cache";
+import { updateProfileRegion, ensureProfile } from "@/app/actions/profile";
 import Link from "next/link";
 
 async function signOut() {
@@ -29,8 +28,9 @@ export default async function ProfilePage() {
     redirect("/login");
   }
 
-  const profile = await getProfile(user.id);
-  
+  // ensureProfile creates the row if it's missing (e.g. first OAuth login)
+  const profile = await ensureProfile();
+
   // Default values if profile hasn't been created yet
   const displayName = profile?.display_name || user.email?.split('@')[0] || "User";
   const plan = profile?.plan || "free";
@@ -39,7 +39,7 @@ export default async function ProfilePage() {
   return (
     <div className="flex flex-col px-4 py-6 md:px-12 md:py-10 mx-auto max-w-4xl w-full">
       <h1 className="text-display-lg-mobile md:text-display-lg mb-8 text-on-background">Profile</h1>
-      
+
       {/* User Info Card */}
       <div className="mb-8 flex items-center gap-4 rounded-lg bg-surface-container p-6">
         <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-surface-bright">
@@ -57,7 +57,7 @@ export default async function ProfilePage() {
       {/* Options List */}
       <div className="flex flex-col gap-2">
         <h3 className="text-label-caps mb-2 text-muted">Account Settings</h3>
-        
+
         <Link href="/settings" className="flex w-full items-center justify-between rounded-lg bg-surface-container p-4 text-left transition-colors hover:bg-surface-bright">
           <div className="flex items-center gap-4">
             <Settings size={20} className="text-muted" />
@@ -65,7 +65,7 @@ export default async function ProfilePage() {
           </div>
           <ChevronRight size={20} className="text-muted" />
         </Link>
-        
+
         <button className="flex w-full items-center justify-between rounded-lg bg-surface-container p-4 text-left transition-colors hover:bg-surface-bright">
           <div className="flex items-center gap-4">
             <CreditCard size={20} className="text-muted" />
@@ -80,7 +80,6 @@ export default async function ProfilePage() {
             "use server";
             const newRegion = formData.get("region") as string;
             await updateProfileRegion(newRegion);
-            revalidatePath("/profile");
           }}
           className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between rounded-lg bg-surface-container p-4 border border-surface-bright/20"
         >

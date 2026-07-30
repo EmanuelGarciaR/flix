@@ -7,11 +7,13 @@ import { cn } from "@/lib/utils"
 import gsap from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
 import { useGSAP } from "@gsap/react"
+import { useLanguage } from "@/components/providers/LanguageProvider"
 
 gsap.registerPlugin(ScrollTrigger)
 
 export function Header({ className }: { className?: string }) {
   const headerRef = useRef<HTMLElement>(null)
+  const { t } = useLanguage()
 
   useGSAP(() => {
     const hideAnim = gsap.to(headerRef.current, { 
@@ -44,20 +46,20 @@ export function Header({ className }: { className?: string }) {
         
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-6">
-          <Link href="/home" className="text-body-sm font-medium text-muted hover:text-on-background transition-colors">Home</Link>
-          <Link href="/browse" className="text-body-sm font-medium text-muted hover:text-on-background transition-colors">Browse</Link>
-          <Link href="/my-list" className="text-body-sm font-medium text-muted hover:text-on-background transition-colors">My List</Link>
+          <Link href="/home" className="text-body-sm font-medium text-muted hover:text-on-background transition-colors">{t("home")}</Link>
+          <Link href="/browse" className="text-body-sm font-medium text-muted hover:text-on-background transition-colors">{t("browse")}</Link>
+          <Link href="/my-list" className="text-body-sm font-medium text-muted hover:text-on-background transition-colors">{t("myList")}</Link>
         </nav>
       </div>
       
       <div className="flex items-center gap-4">
         <Link href="/search" className="text-on-background transition-colors hover:text-primary">
           <Search size={20} />
-          <span className="sr-only">Search</span>
+          <span className="sr-only">{t("search")}</span>
         </Link>
         <Link href="/profile" className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-container transition-colors hover:bg-surface-bright">
           <User size={16} className="text-on-surface" />
-          <span className="sr-only">Profile</span>
+          <span className="sr-only">{t("profile")}</span>
         </Link>
       </div>
     </header>

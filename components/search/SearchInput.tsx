@@ -22,7 +22,7 @@ export function SearchInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="h-12 w-full rounded border border-surface-bright bg-surface-container pl-10 pr-10 text-body-sm text-on-surface focus:border-primary focus:outline-none transition-colors"
+        className="h-14 w-full rounded border border-surface-bright bg-surface-container pl-10 pr-10 text-body-lg text-on-surface focus:border-primary focus:outline-none transition-colors"
       />
       {value && (
         <button

@@ -1,5 +1,7 @@
 'use server';
 import { createClient } from '@/lib/supabase/server';
+import { getActiveProfile } from '@/lib/auth';
+import { revalidatePath } from 'next/cache';
 
 export async function toggleMyList({
   profileId,
@@ -45,6 +47,24 @@ export async function getMyList(profileId: string) {
 
   if (error) throw error;
   return data || [];
+}
+
+export async function removeFromMyList(listItemId: string) {
+  const profile = await getActiveProfile();
+  if (!profile) {
+    throw new Error('Unauthorized');
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('my_list')
+    .delete()
+    .eq('id', listItemId)
+    .eq('profile_id', profile.id);
+
+  if (error) throw error;
+
+  revalidatePath('/my-list');
 }
 
 export async function checkIfInMyList({

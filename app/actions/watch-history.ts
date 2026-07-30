@@ -7,6 +7,7 @@ export async function updateWatchProgress({
   mediaType,
   title,
   posterPath,
+  playbackId,
   seasonNumber,
   episodeNumber,
   progressSeconds,
@@ -17,6 +18,7 @@ export async function updateWatchProgress({
   mediaType: 'movie' | 'tv';
   title?: string;
   posterPath?: string;
+  playbackId?: string;
   seasonNumber?: number;
   episodeNumber?: number;
   progressSeconds: number;
@@ -30,8 +32,8 @@ export async function updateWatchProgress({
     user_id: (await supabase.auth.getUser()).data.user?.id,
     tmdb_id: tmdbId,
     media_type: mediaType,
-    season_number: seasonNumber,
-    episode_number: episodeNumber,
+    season_number: seasonNumber ?? 0,
+    episode_number: episodeNumber ?? 0,
     progress_seconds: progressSeconds,
     duration_seconds: durationSeconds,
     completed,
@@ -41,6 +43,7 @@ export async function updateWatchProgress({
 
   if (title) updateFields.title = title;
   if (posterPath) updateFields.poster_path = posterPath;
+  if (playbackId) updateFields.mux_playback_id = playbackId;
 
   const { error } = await supabase.from('watch_history').upsert(updateFields, {
     onConflict: 'profile_id,tmdb_id,media_type,season_number,episode_number'

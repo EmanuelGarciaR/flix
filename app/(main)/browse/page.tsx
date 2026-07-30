@@ -1,8 +1,11 @@
 import { tmdb } from "@/lib/tmdb";
-import { getActiveProfile } from "@/lib/auth";
+import { getActiveProfile, getUserRegion } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 import { MovieCard } from "@/components/ui/MovieCard";
 import { Button } from "@/components/ui/Button";
 import Link from "next/link";
+import { getTmdbLanguage } from "@/lib/i18n";
+import { getDemoMode } from "@/lib/demo";
 
 interface Props {
   searchParams: Promise<{ genre?: string }>;
@@ -22,20 +25,41 @@ const genres = [
 export default async function BrowsePage({ searchParams }: Props) {
   const { genre = 'all' } = await searchParams;
   const profile = await getActiveProfile();
-  const region = profile?.region || 'US';
+  const region = await getUserRegion();
+  const language = getTmdbLanguage(profile?.language);
+  const demoMode = await getDemoMode();
+
+  const supabase = await createClient();
+  const { data: playableContent } = await supabase
+    .from('playable_content')
+    .select('tmdb_id, available_regions');
 
   let results = [];
   try {
     if (genre === 'all') {
-      const data = await tmdb.popular('movie', 1, region);
+      const data = await tmdb.popular('movie', 1, region, language);
       results = data.results || [];
     } else {
-      const data = await tmdb.discover({ with_genres: genre, region, watch_region: region });
+      const data = await tmdb.discover(
+        { with_genres: genre, region, watch_region: demoMode ? undefined : region }, 
+        language
+      );
       results = data.results || [];
     }
   } catch (err) {
     console.error("Error fetching discover data:", err);
   }
+
+  // Filter TMDB results against playable_content for best-effort region gating
+  const filterResults = (items: any[] = []) => {
+    if (demoMode) return items;
+    return items.filter((item) => {
+      const dbEntry = playableContent?.find((pc) => pc.tmdb_id === item.id);
+      return dbEntry && dbEntry.available_regions.includes(region);
+    });
+  };
+
+  results = filterResults(results);
 
   return (
     <div className="flex flex-col gap-8 px-4 py-6 md:px-12 md:py-10">
@@ -71,7 +95,7 @@ export default async function BrowsePage({ searchParams }: Props) {
           const itemTitle = item.title || item.name || "Untitled";
           const mediaType = item.media_type || (item.first_air_date ? 'tv' : 'movie');
           const id = item.id;
-          
+
           const year = item.release_date || item.first_air_date
             ? new Date(item.release_date || item.first_air_date).getFullYear().toString()
             : "";

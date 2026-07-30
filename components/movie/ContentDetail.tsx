@@ -12,6 +12,9 @@ interface ContentDetailProps {
   providers?: any;
   tmdb: any;
   profileId?: string;
+  playableContent?: { available_regions: string[], mux_playback_id: string } | null;
+  userRegion?: string;
+  isDemoMode?: boolean;
 }
 
 export function ContentDetail({
@@ -20,11 +23,14 @@ export function ContentDetail({
   providers,
   tmdb,
   profileId,
+  playableContent,
+  userRegion,
+  isDemoMode,
 }: ContentDetailProps) {
   const title = item.title || item.name || "Untitled";
   const backdropUrl = tmdb.backdrop(item.backdrop_path, "original");
   const posterUrl = tmdb.image(item.poster_path, "w500");
-  
+
   const releaseYear = item.release_date || item.first_air_date
     ? new Date(item.release_date || item.first_air_date).getFullYear()
     : null;
@@ -32,28 +38,40 @@ export function ContentDetail({
   const duration = item.runtime
     ? `${Math.floor(item.runtime / 60)}h ${item.runtime % 60}m`
     : item.number_of_seasons
-    ? `${item.number_of_seasons} Season${item.number_of_seasons > 1 ? 's' : ''}`
-    : null;
+      ? `${item.number_of_seasons} Season${item.number_of_seasons > 1 ? 's' : ''}`
+      : null;
 
   const rating = item.vote_average ? item.vote_average.toFixed(1) : null;
   const genres = item.genres || [];
 
-  const trailer = item.videos?.results?.find((v: any) => v.type === "Trailer" && v.site === "YouTube") || 
-                  item.videos?.results?.find((v: any) => v.site === "YouTube");
+  const youtubeVideos = (item.videos?.results || []).filter(
+    (v: any) => v.site?.toLowerCase() === "youtube" && v.key
+  );
 
-  // Play URL
-  const playbackId = trailer ? `youtube:${trailer.key}` : null;
-  const playUrl = buildWatchUrl(playbackId, {
+  const trailer =
+    youtubeVideos.find((v: any) => v.type?.toLowerCase() === "trailer" && v.official) ||
+    youtubeVideos.find((v: any) => v.type?.toLowerCase() === "trailer") ||
+    youtubeVideos.find((v: any) => v.type?.toLowerCase() === "teaser") ||
+    youtubeVideos.find((v: any) => v.type?.toLowerCase() === "clip") ||
+    youtubeVideos[0];
+
+  // The background trailer and Play use separate YouTube player instances.
+  const playUrl = buildWatchUrl(playableContent?.mux_playback_id || null, {
     tmdbId: item.id,
     type: mediaType,
     season: mediaType === "tv" ? 1 : undefined,
     episode: mediaType === "tv" ? 1 : undefined,
+    demoMode: isDemoMode ? 'all' : undefined,
   });
+
+  const isPlayable = isDemoMode
+    ? !!playableContent?.mux_playback_id
+    : playableContent?.available_regions?.includes(userRegion || 'US') && !!playableContent?.mux_playback_id;
 
   // Cast members (Top 5)
   const cast = item.credits?.cast?.slice(0, 5) || [];
-  const director = item.credits?.crew?.find((c: any) => c.job === "Director")?.name || 
-                   item.created_by?.[0]?.name;
+  const director = item.credits?.crew?.find((c: any) => c.job === "Director")?.name ||
+    item.created_by?.[0]?.name;
 
   return (
     <div className="flex flex-col gap-8">
@@ -62,8 +80,8 @@ export function ContentDetail({
         {trailer ? (
           <div className="absolute inset-0 w-full h-full pointer-events-none">
             <iframe
-              src={`https://www.youtube.com/embed/${trailer.key}?autoplay=1&mute=1&controls=0&showinfo=0&rel=0&loop=1&playlist=${trailer.key}&modestbranding=1`}
-              allow="autoplay; encrypted-media"
+              src={`https://www.youtube.com/embed/${trailer.key}?autoplay=1&mute=1&controls=0&showinfo=0&rel=0&loop=1&playlist=${trailer.key}&modestbranding=1&playsinline=1&enablejsapi=1`}
+              allow="autoplay; encrypted-media; picture-in-picture"
               className="w-full h-full object-cover scale-[1.35] opacity-80"
               style={{ border: 0 }}
             />
@@ -91,13 +109,13 @@ export function ContentDetail({
               sizes="280px"
             />
           </div>
-          
+
           <div className="flex flex-col gap-6 flex-1 w-full">
             <div>
               <h1 className="text-display-lg-mobile md:text-display-lg font-bold text-on-background drop-shadow">
                 {title}
               </h1>
-              
+
               {/* Badges / Meta Info */}
               <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3 text-body-sm text-muted">
                 {releaseYear && (
@@ -142,12 +160,18 @@ export function ContentDetail({
 
             {/* Action Buttons */}
             <div className="flex flex-wrap items-center gap-4 w-full">
-              <Link href={playUrl} className="w-full sm:w-auto">
-                <Button size="lg" className="w-full gap-2">
-                  <Play fill="currentColor" size={20} />
-                  Play
+              {isPlayable ? (
+                <Link href={playUrl} className="w-full sm:w-auto">
+                  <Button size="lg" className="w-full gap-2">
+                    <Play fill="currentColor" size={20} />
+                    Play
+                  </Button>
+                </Link>
+              ) : (
+                <Button size="lg" className="w-full sm:w-auto gap-2" disabled>
+                  Not available
                 </Button>
-              </Link>
+              )}
               {profileId && (
                 <MyListButton
                   profileId={profileId}
@@ -174,7 +198,7 @@ export function ContentDetail({
                 </p>
               </div>
             )}
-            
+
             {/* Cast & Crew Summary */}
             <div className="flex flex-col gap-2 mt-2 border-t border-surface-bright/30 pt-6">
               {cast.length > 0 && (
