@@ -2,6 +2,7 @@ import * as React from "react";
 import { Play, ThumbsUp, Share2, Calendar, Clock, Film, Star } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { MyListButton } from "./MyListButton";
+import { DislikeButton } from "./DislikeButton";
 import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
 import Link from "next/link";
 import { buildWatchUrl } from "@/lib/playback";
@@ -167,6 +168,13 @@ export function ContentDetail({
               <Button variant="secondary" size="icon" title="Like">
                 <ThumbsUp size={20} />
               </Button>
+              {profileId && (
+                <DislikeButton
+                  profileId={profileId}
+                  tmdbId={item.id}
+                  mediaType={mediaType}
+                />
+              )}
               <Button variant="secondary" size="icon" title="Share">
                 <Share2 size={20} />
               </Button>
