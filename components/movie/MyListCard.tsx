@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Check, Info, Loader2, MoreVertical, Share2 } from 'lucide-react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { removeFromMyList } from '@/app/actions/my-list';
+import { shareContent } from '@/lib/utils';
 
 interface MyListCardProps {
   id: string;
@@ -43,22 +44,12 @@ export function MyListCard({ id, href, title, metadata, overview, imageUrl }: My
 
   async function handleShare() {
     const url = new URL(href, window.location.origin).toString();
-    const shareData = { title, text: title, url };
-
-    try {
-      if (navigator.share) {
-        await navigator.share(shareData);
-      } else {
-        await navigator.clipboard.writeText(url);
-        setCopied(true);
-        window.setTimeout(() => setCopied(false), 2000);
-      }
-    } catch (error) {
-      if ((error as DOMException).name !== 'AbortError') {
-        console.error('Error sharing title:', error);
-      }
-    }
+    await shareContent(title, url, () => {
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    });
   }
+
 
   return (
     <>
