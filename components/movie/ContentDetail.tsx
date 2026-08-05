@@ -2,6 +2,7 @@ import * as React from "react";
 import { Play, ThumbsUp, Share2, Calendar, Clock, Film, Star } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { MyListButton } from "./MyListButton";
+import { DislikeButton } from "./DislikeButton";
 import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
 import Link from "next/link";
 import { buildWatchUrl } from "@/lib/playback";
@@ -12,6 +13,7 @@ interface ContentDetailProps {
   providers?: any;
   tmdb: any;
   profileId?: string;
+  showPlayButton?: boolean;
 }
 
 export function ContentDetail({
@@ -20,6 +22,7 @@ export function ContentDetail({
   providers,
   tmdb,
   profileId,
+  showPlayButton = true,
 }: ContentDetailProps) {
   const title = item.title || item.name || "Untitled";
   const backdropUrl = tmdb.backdrop(item.backdrop_path, "original");
@@ -38,12 +41,19 @@ export function ContentDetail({
   const rating = item.vote_average ? item.vote_average.toFixed(1) : null;
   const genres = item.genres || [];
 
-  const trailer = item.videos?.results?.find((v: any) => v.type === "Trailer" && v.site === "YouTube") || 
-                  item.videos?.results?.find((v: any) => v.site === "YouTube");
+  const youtubeVideos = (item.videos?.results || []).filter(
+    (v: any) => v.site?.toLowerCase() === "youtube" && v.key
+  );
 
-  // Play URL
-  const playbackId = trailer ? `youtube:${trailer.key}` : null;
-  const playUrl = buildWatchUrl(playbackId, {
+  const trailer =
+    youtubeVideos.find((v: any) => v.type?.toLowerCase() === "trailer" && v.official) ||
+    youtubeVideos.find((v: any) => v.type?.toLowerCase() === "trailer") ||
+    youtubeVideos.find((v: any) => v.type?.toLowerCase() === "teaser") ||
+    youtubeVideos.find((v: any) => v.type?.toLowerCase() === "clip") ||
+    youtubeVideos[0];
+
+  // The background trailer and Play use separate YouTube player instances.
+  const playUrl = buildWatchUrl(trailer?.key ? `youtube:${trailer.key}` : null, {
     tmdbId: item.id,
     type: mediaType,
     season: mediaType === "tv" ? 1 : undefined,
@@ -62,8 +72,8 @@ export function ContentDetail({
         {trailer ? (
           <div className="absolute inset-0 w-full h-full pointer-events-none">
             <iframe
-              src={`https://www.youtube.com/embed/${trailer.key}?autoplay=1&mute=1&controls=0&showinfo=0&rel=0&loop=1&playlist=${trailer.key}&modestbranding=1`}
-              allow="autoplay; encrypted-media"
+              src={`https://www.youtube.com/embed/${trailer.key}?autoplay=1&mute=1&controls=0&showinfo=0&rel=0&loop=1&playlist=${trailer.key}&modestbranding=1&playsinline=1&enablejsapi=1`}
+              allow="autoplay; encrypted-media; picture-in-picture"
               className="w-full h-full object-cover scale-[1.35] opacity-80"
               style={{ border: 0 }}
             />
@@ -142,12 +152,14 @@ export function ContentDetail({
 
             {/* Action Buttons */}
             <div className="flex flex-wrap items-center gap-4 w-full">
-              <Link href={playUrl} className="w-full sm:w-auto">
-                <Button size="lg" className="w-full gap-2">
-                  <Play fill="currentColor" size={20} />
-                  Play
-                </Button>
-              </Link>
+              {showPlayButton && (
+                <Link href={playUrl} className="w-full sm:w-auto">
+                  <Button size="lg" className="w-full gap-2">
+                    <Play fill="currentColor" size={20} />
+                    Play
+                  </Button>
+                </Link>
+              )}
               {profileId && (
                 <MyListButton
                   profileId={profileId}
@@ -160,6 +172,13 @@ export function ContentDetail({
               <Button variant="secondary" size="icon" title="Like">
                 <ThumbsUp size={20} />
               </Button>
+              {profileId && (
+                <DislikeButton
+                  profileId={profileId}
+                  tmdbId={item.id}
+                  mediaType={mediaType}
+                />
+              )}
               <Button variant="secondary" size="icon" title="Share">
                 <Share2 size={20} />
               </Button>

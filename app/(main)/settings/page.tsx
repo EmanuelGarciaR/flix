@@ -5,6 +5,7 @@ import { getActiveProfile } from "@/lib/auth";
 import { updateProfileSettings } from "@/app/actions/profile";
 import { revalidatePath } from "next/cache";
 import Link from "next/link";
+import { getMessages, normalizeLocale } from "@/lib/i18n";
 
 const languages = [
   { code: "en", name: "English" },
@@ -27,7 +28,8 @@ export default async function SettingsPage() {
     redirect("/login");
   }
 
-  const currentLanguage = profile.language || "en";
+  const currentLanguage = normalizeLocale(profile.language);
+  const t = getMessages(currentLanguage);
   const currentMaturity = profile.maturity_rating || "TV-MA";
   const currentIsKids = !!profile.is_kids;
 
@@ -55,7 +57,7 @@ export default async function SettingsPage() {
           <ChevronLeft size={28} />
         </Link>
         <h1 className="text-display-lg-mobile md:text-display-lg text-on-background">
-          Settings
+          {t.settings}
         </h1>
       </div>
 
@@ -63,7 +65,7 @@ export default async function SettingsPage() {
         {/* Language */}
         <div className="flex flex-col gap-2">
           <label htmlFor="language" className="text-body-lg font-semibold text-on-background">
-            Preferred Language
+            {t.preferredLanguage}
           </label>
           <select
             id="language"
@@ -82,7 +84,7 @@ export default async function SettingsPage() {
         {/* Maturity Rating */}
         <div className="flex flex-col gap-2">
           <label htmlFor="maturity_rating" className="text-body-lg font-semibold text-on-background">
-            Maturity Rating Filter
+            {t.maturityRating}
           </label>
           <select
             id="maturity_rating"
@@ -101,8 +103,8 @@ export default async function SettingsPage() {
         {/* Kids Mode Toggle */}
         <div className="flex items-center justify-between p-4 rounded bg-surface-container-high border border-surface-bright/20 mt-2">
           <div className="flex flex-col gap-1 pr-4">
-            <span className="text-body-md font-semibold text-on-background">Kids Profile</span>
-            <p className="text-xs text-muted">Restricts visibility to child-friendly content and ratings.</p>
+            <span className="text-body-md font-semibold text-on-background">{t.kidsProfile}</span>
+            <p className="text-xs text-muted">{t.kidsProfileDescription}</p>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
             <input
@@ -118,11 +120,11 @@ export default async function SettingsPage() {
         {/* Action Buttons */}
         <div className="flex items-center gap-4 mt-6">
           <Button type="submit" size="lg" className="flex-1 sm:flex-initial">
-            Save Preferences
+            {t.savePreferences}
           </Button>
           <Link href="/profile" className="flex-1 sm:flex-initial text-center">
             <Button type="button" variant="secondary" size="lg" className="w-full">
-              Cancel
+              {t.cancel}
             </Button>
           </Link>
         </div>

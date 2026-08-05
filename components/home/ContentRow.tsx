@@ -8,6 +8,7 @@ interface ContentRowProps {
   items: any[];
   getImage: (item: any) => string | null;
   className?: string;
+  demoMode?: boolean;
 }
 
 export function ContentRow({
@@ -15,6 +16,7 @@ export function ContentRow({
   items,
   getImage,
   className,
+  demoMode = false,
 }: ContentRowProps) {
   if (!items || items.length === 0) return null;
 
@@ -28,7 +30,10 @@ export function ContentRow({
           const itemTitle = item.title || item.name || "Untitled";
           const mediaType = item.media_type || (item.first_air_date ? 'tv' : 'movie');
           const id = item.id;
-          const href = `/${mediaType}/${id}`;
+
+          const basePath = `/${mediaType}/${id}`;
+          const href = demoMode ? `${basePath}?demoMode=all` : basePath;
+
           const year = item.release_date || item.first_air_date
             ? new Date(item.release_date || item.first_air_date).getFullYear().toString()
             : "";

@@ -1,18 +1,24 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useSearchParams } from "next/navigation"
 import { Home, Compass, Bookmark, User } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useLanguage } from "@/components/providers/LanguageProvider"
 
 export function BottomNav({ className }: { className?: string }) {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const { t } = useLanguage()
+
+  const isDemoMode = searchParams.get("demoMode") === "all"
+  const getHref = (path: string) => isDemoMode ? `${path}?demoMode=all` : path
 
   const navItems = [
-    { name: "Home", href: "/home", icon: Home },
-    { name: "Browse", href: "/browse", icon: Compass },
-    { name: "My List", href: "/my-list", icon: Bookmark },
-    { name: "Profile", href: "/profile", icon: User },
+    { name: t("home"), href: "/home", icon: Home },
+    { name: t("browse"), href: "/browse", icon: Compass },
+    { name: t("myList"), href: "/my-list", icon: Bookmark },
+    { name: t("profile"), href: "/profile", icon: User },
   ]
 
   return (
@@ -25,7 +31,7 @@ export function BottomNav({ className }: { className?: string }) {
           return (
             <Link
               key={item.name}
-              href={item.href}
+              href={getHref(item.href)}
               className={cn(
                 "flex flex-col items-center gap-1 p-2 text-muted transition-colors hover:text-on-background",
                 isActive && "text-primary hover:text-primary"

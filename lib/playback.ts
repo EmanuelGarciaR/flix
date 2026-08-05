@@ -1,4 +1,4 @@
-const DEFAULT_TEST_PLAYBACK_ID = "DS00UiKuA3yIZ7o02JnTIUBW494G6G01rf00B";
+const DEFAULT_TEST_PLAYBACK_ID = "demo-stream";
 
 export function getFallbackPlaybackId() {
   return process.env.NEXT_PUBLIC_MUX_TEST_PLAYBACK_ID || DEFAULT_TEST_PLAYBACK_ID;

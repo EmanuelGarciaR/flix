@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getActiveProfile } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 
-export async function toggleMyList({
+export async function toggleDislike({
   profileId,
   tmdbId,
   mediaType,
@@ -15,7 +15,7 @@ export async function toggleMyList({
   const supabase = await createClient();
   
   const { data: existing } = await supabase
-    .from('my_list')
+    .from('dislikes')
     .select('id')
     .eq('profile_id', profileId)
     .eq('tmdb_id', tmdbId)
@@ -23,11 +23,11 @@ export async function toggleMyList({
     .maybeSingle();
 
   if (existing) {
-    const { error } = await supabase.from('my_list').delete().eq('id', existing.id);
+    const { error } = await supabase.from('dislikes').delete().eq('id', existing.id);
     if (error) throw error;
     return { added: false };
   } else {
-    const { error } = await supabase.from('my_list').insert({
+    const { error } = await supabase.from('dislikes').insert({
       profile_id: profileId,
       tmdb_id: tmdbId,
       media_type: mediaType,
@@ -37,37 +37,7 @@ export async function toggleMyList({
   }
 }
 
-export async function getMyList(profileId: string) {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('my_list')
-    .select('*')
-    .eq('profile_id', profileId)
-    .order('added_at', { ascending: false });
-
-  if (error) throw error;
-  return data || [];
-}
-
-export async function removeFromMyList(listItemId: string) {
-  const profile = await getActiveProfile();
-  if (!profile) {
-    throw new Error('Unauthorized');
-  }
-
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from('my_list')
-    .delete()
-    .eq('id', listItemId)
-    .eq('profile_id', profile.id);
-
-  if (error) throw error;
-
-  revalidatePath('/my-list');
-}
-
-export async function checkIfInMyList({
+export async function checkIfDisliked({
   profileId,
   tmdbId,
   mediaType,
@@ -78,7 +48,7 @@ export async function checkIfInMyList({
 }) {
   const supabase = await createClient();
   const { data, error } = await supabase
-    .from('my_list')
+    .from('dislikes')
     .select('id')
     .eq('profile_id', profileId)
     .eq('tmdb_id', tmdbId)

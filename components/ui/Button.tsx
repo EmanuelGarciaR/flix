@@ -24,6 +24,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           className
         )}
         {...props}
+        disabled={props.disabled ? true : undefined}
       />
     )
   }

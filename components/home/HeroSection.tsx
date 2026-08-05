@@ -12,6 +12,7 @@ interface HeroSectionProps {
   tmdbId: number;
   mediaType: "movie" | "tv";
   profileId?: string;
+  detailsUrl?: string;
 }
 
 export function HeroSection({
@@ -21,9 +22,10 @@ export function HeroSection({
   tmdbId,
   mediaType,
   profileId,
+  detailsUrl,
 }: HeroSectionProps) {
   const playUrl = buildWatchUrl(null, { tmdbId, type: mediaType });
-  const detailsUrl = `/${mediaType}/${tmdbId}`;
+  const resolvedDetailsUrl = detailsUrl || `/${mediaType}/${tmdbId}`;
 
   return (
     <section className="relative flex min-h-[70vh] w-full flex-col justify-end pb-12 pt-24 px-4 md:min-h-[85vh] md:px-12">
@@ -70,7 +72,7 @@ export function HeroSection({
               size="lg"
             />
           )}
-          <Link href={detailsUrl} className="w-full sm:w-auto">
+          <Link href={resolvedDetailsUrl} className="w-full sm:w-auto">
             <Button variant="secondary" size="lg" className="w-full gap-2 border-surface-bright bg-surface/40 backdrop-blur-md">
               <Info size={20} />
               Details

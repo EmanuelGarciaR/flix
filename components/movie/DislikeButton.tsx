@@ -1,11 +1,11 @@
 'use client';
 
 import * as React from "react";
-import { Plus, Check, Loader2 } from "lucide-react";
+import { ThumbsDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { toggleMyList, checkIfInMyList } from "@/app/actions/my-list";
+import { toggleDislike, checkIfDisliked } from "@/app/actions/dislikes";
 
-interface MyListButtonProps {
+interface DislikeButtonProps {
   profileId: string;
   tmdbId: number;
   mediaType: "movie" | "tv";
@@ -13,14 +13,14 @@ interface MyListButtonProps {
   size?: "default" | "sm" | "lg" | "icon";
 }
 
-export function MyListButton({
+export function DislikeButton({
   profileId,
   tmdbId,
   mediaType,
   variant = "secondary",
-  size = "lg",
-}: MyListButtonProps) {
-  const [isInList, setIsInList] = React.useState(false);
+  size = "icon",
+}: DislikeButtonProps) {
+  const [isDisliked, setIsDisliked] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
   const [toggling, setToggling] = React.useState(false);
 
@@ -31,13 +31,13 @@ export function MyListButton({
     let active = true;
     async function check() {
       try {
-        const result = await checkIfInMyList({ profileId, tmdbId, mediaType });
+        const result = await checkIfDisliked({ profileId, tmdbId, mediaType });
         if (active) {
-          setIsInList(result);
+          setIsDisliked(result);
           setLoading(false);
         }
       } catch (err) {
-        console.error("Error checking list:", err);
+        console.error("Error checking dislike:", err);
         if (active) setLoading(false);
       }
     }
@@ -52,10 +52,10 @@ export function MyListButton({
     if (toggling) return;
     setToggling(true);
     try {
-      const res = await toggleMyList({ profileId, tmdbId, mediaType });
-      setIsInList(res.added);
+      const res = await toggleDislike({ profileId, tmdbId, mediaType });
+      setIsDisliked(res.added);
     } catch (err) {
-      console.error("Error toggling list:", err);
+      console.error("Error toggling dislike:", err);
     } finally {
       setToggling(false);
     }
@@ -63,9 +63,8 @@ export function MyListButton({
 
   if (!mounted || loading) {
     return (
-      <Button variant={variant} size={size} disabled={true} className="gap-2">
+      <Button variant={variant} size={size} disabled={true} title="Dislike">
         <Loader2 size={20} className="animate-spin" />
-        List
       </Button>
     );
   }
@@ -76,19 +75,10 @@ export function MyListButton({
       size={size}
       onClick={handleToggle}
       disabled={toggling}
-      className="gap-2"
+      title="Dislike"
+      className={isDisliked ? "text-primary" : ""}
     >
-      {isInList ? (
-        <>
-          <Check size={20} className="text-primary" />
-          In My List
-        </>
-      ) : (
-        <>
-          <Plus size={20} />
-          My List
-        </>
-      )}
+      <ThumbsDown size={20} className={isDisliked ? "fill-primary" : ""} />
     </Button>
   );
 }

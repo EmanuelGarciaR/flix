@@ -70,11 +70,6 @@
   
   /* Spacing */
   --spacing-base: 4px;
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
-  --spacing-xl: 32px;
   --spacing-gutter: 12px;
   --spacing-margin-mobile: 16px;
   --spacing-margin-desktop: 48px;
